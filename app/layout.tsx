@@ -20,7 +20,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-	title: "Eco Harvest - Farm Management System",
+	title: "Diary Dashboard",
 	description: "Farm Management System",
 };
 
@@ -41,7 +41,7 @@ export default function RootLayout({
 						<SidebarTrigger />
 						{children}
 					</main>
-					
+
 				</SidebarProvider>
 				<Toaster />
 			</body>

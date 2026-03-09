@@ -1,28 +1,30 @@
-# Next-Type
+# Dashboard Diary (Next-Type)
 
-Next-Type is a full-stack project built using **Expo** and **Next.js**, designed to work seamlessly across web and mobile platforms. This app provides a mobile-responsive experience with API access through Next.js, connected to a Postgres database using Drizzle ORM.
+Dashboard Diary is a web application built with **Next.js**. It currently features a responsive Next.js web frontend, with an API backend connected to a Postgres database using Drizzle ORM. 
+
+**Note on Mobile Development:** In the future, this project plans to introduce a mobile application built with **React Native / Expo**. You may see references to Expo in the directory structure or planned steps, but the application is currently actively using the Next.js UI for both web and mobile-web experiences.
 
 ## Project Overview
 
-- **Frontend:**
-  - **Expo** for mobile-first development.
-  - Works on both mobile and web platforms.
-- **Backend:**
-  - **Next.js** API for handling data requests.
+- **Frontend / Backend:**
+  - Developed using **Next.js** (Current UI).
+  - Handles API requests and serves the responsive web interface.
 - **Database:**
-  - **Postgres** database integrated using **Drizzle ORM**.
+  - **Postgres** integrated using **Drizzle ORM**.
+- **Future Upgrade:**
+  - A mobile-first **Expo** (React Native) app is planned for future cross-platform (iOS/Android) releases.
 - **Package Managers:**
-  - **Expo App**: Currently using **npm**.
   - **Next.js Project**: Using **pnpm** for faster performance.
-- **Planned Migration**: In the future, both the Expo and Next.js projects will be migrated to **pnpm**.
+  - *(Future)* **Expo App**: Will use npm (or eventually pnpm).
 
 ## Features
 
-- Mobile-responsive design that works on web and mobile.
-- API endpoints in Next.js connected to a Postgres database using Drizzle ORM.
+- Mobile-responsive web design currently powered by Next.js.
+- API endpoints in Next.js connected to a Postgres database via Drizzle ORM.
 - Current use case: **Farm Management** system, including:
   - Tracking farm revenues.
   - Tracking farm expenses.
+  - Branch and User management.
   - More farm-related features to come.
 
 ## Getting Started
@@ -30,9 +32,8 @@ Next-Type is a full-stack project built using **Expo** and **Next.js**, designed
 ### Prerequisites
 
 Make sure you have the following installed:
-- **Node.js** (>= 14.x)
-- **npm** (>= 6.x) or **pnpm** (>= 7.x)
-- **Expo CLI** (>= 5.x)
+- **Node.js** (>= 18.x recommended)
+- **pnpm** (>= 7.x)
 - **Postgres Database**
 
 ### Installation
@@ -41,133 +42,101 @@ Make sure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd next-type
-```
-#### 2. Install Dependencies
-For the Next.js Project (using pnpm)
-```bash
-Copy code
-cd nextjs
-pnpm install
-For the Expo App (using npm for now)
-bash
-Copy code
-cd expo-app
-npm install
+cd dashboard-diary
 ```
 
-#### 3. Setting Vercel database
-Running the Next.js API
+#### 2. Install Dependencies
+
+Navigate to the project folder and run:
+
+```bash
+pnpm install
+```
+
+#### 3. Database Setup
+
+Ensure your Postgres database is up and running. 
+
+Create a `.env.local` or `.env` file in the root directory with your database credentials and other necessary environment variables:
+
+```env
+DATABASE_URL=your_postgres_database_url
+```
+
+Drizzle ORM will handle the database schema and migrations. To run migrations and push the schema:
+
+```bash
+pnpm dlx drizzle-kit migrate
+# or depending on your package.json scripts:
+# pnpm run drizzle:sync
+```
+
+*(Optional)* If you are linking to an existing Vercel project's database:
+
 ```bash
 pnpm dlx vercel link
-then
 pnpm dlx vercel env pull .env.development.local
 ```
+
 #### 4. Running the Application
-Running the Next.js API
-```bash
-Copy code
-cd nextjs
-pnpm run dev
-```
 
-This will start the Next.js API on http://localhost:3000.
-
-Running the Expo App
-bash
-Copy code
-cd expo-app
-npm start
-This will open Expo Developer Tools. You can either run the app on a simulator/emulator or scan the QR code to run it on a real device using Expo Go.
-
-#### 4. Database Setup
-Ensure your Postgres database is up and running.
-
-Update the .env file in the nextjs directory with your database credentials and other necessary environment variables:
+Run the development server:
 
 ```bash
-Copy code
-DATABASE_URL=your_postgres_database_url
-Drizzle ORM will handle the database schema and migrations. To run migrations:
-
-bash
-Copy code
-cd nextjs
-pnpm run drizzle:sync
+pnpm dev
 ```
 
-#### 5. Additional Configuration
-If needed, update the Expo app’s .env file with API URLs and other necessary configuration.
-The Expo app will consume the API provided by the Next.js backend.
-Development Notes
-Reinitialize Setup: In case you need to reset and start fresh, follow these steps:
-```bash
-Copy code
-rm -rf node_modules
-git clone <repository-url>
-cd next-type && pnpm install && npm install
+This will start the Next.js application on [http://localhost:3000](http://localhost:3000).
+
+---
+
+### Initial Setup: Creating Users
+
+Since the system starts without an admin, follow these steps via the browser once the app is running:
+
+1. **Create a branch:**
+   Navigate to `http://localhost:3000/farm/branch/add` and add a branch.
+2. **Add a new user:**
+   Navigate to `http://localhost:3000/farm/user/add` and create your user account.
+3. **Update user role in database:**
+   Use your database client to update the user's role to admin so you have full access:
+   ```sql
+   UPDATE users SET role = 'admin' WHERE email = 'youremail@example.com';
+   ```
+
+---
+
+## Directory Structure
+
+```text
+/
+├── app/                  # Next.js App Router (Pages & API)
+│   ├── api/              # API Endpoints
+│   │   ├── activities/
+│   │   ├── persons/
+│   │   └── activity-persons/
+│   ...
+├── components/           # Reusable React components
+...
 ```
 
-### * .Directory Structure
-```bash
- app/
-└── api/
-    ├── persons/
-    │   └── route.ts
-    ├── activities/
-    │   └── route.ts
-    └── activity-persons/
-        └── route.ts
-```
-expo app structure
-```bash
-root
-│
-├── app                     # Main application folder
-│   ├── screens              # All screen components
-│   │   ├── HomeScreen.tsx   # Home screen after login
-│   │   ├── LoginScreen.tsx  # Login screen for users
-│   │   ├── RevenueScreen.tsx# Revenue form and graph
-│   │   ├── ExpenseScreen.tsx# Expense form and graph
-│   ├── components           # Reusable components (e.g., form inputs, buttons)
-│   │   ├── FormInput.tsx    # Input component for forms
-│   ├── navigation           # All navigation logic
-│   │   └── index.tsx        # Main navigation configuration
-│   ├── App.tsx              # Entry point for the app
-│
-├── assets                   # Any assets (images, fonts)
-│
-├── tsconfig.json            # TypeScript config
-└── package.json             # Package dependencies
-```
+### Future Expo App Structure
 
-### Excluding Expo App from Vercel Deployment
+Once the React Native / Expo migration begins, the app will include a separate directory structure (e.g., `/expo-app`) with mobile-specific screens, navigation, and components, which will connect to the existing Next.js API. 
 
-To keep the Expo app (`type-app`) inside the project folder but exclude it from being deployed to Vercel, I used a `.vercelignore` file. This allows the Expo app to be committed to the repository while ensuring Vercel doesn't attempt to deploy it.
+**Excluding Expo App from Vercel Deployment**
+To keep the future Expo app inside the project folder but exclude it from being deployed to Vercel, a `.vercelignore` file will be used with the path to the Expo directory.
 
-Steps:
-1. Created a `.vercelignore` file in the root of the project.
-2. Added the path to the Expo app folder to the `.vercelignore` file:
+## Future Plans
 
-```bash
-  /expo-type-app
-```
+- **Implement the React Native / Expo App** for dedicated iOS and Android mobile experiences.
+- Migrate the future Expo app to use `pnpm` consistently.
+- Add more features for comprehensive farm management and tracking.
 
-### Future Plans
--Migrate the Expo app to pnpm.
--Add more features for comprehensive farm management and tracking.
--Expand support for different devices and platforms.
+## Contributing
 
-### Contributing
 Contributions are welcome! Feel free to submit pull requests or open issues on GitHub to help improve the project.
 
-### License
+## License
+
 This project is licensed under the MIT License. See the LICENSE file for details.
-
-
-This version includes all necessary information for setup, running the app, database configuration, and future plans.
-
-
-
-
-

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ArrowRight, HelpCircleIcon, LogInIcon, ClipboardCopy } from "lucide-react";
+import { ChevronRight, ArrowRight, HelpCircleIcon, LogInIcon, ClipboardCopy, NotebookIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ export default function LandingPage() {
     const Command = ({ text }: { text: string }) => (
         <div className="flex items-center bg-gray-100 rounded-md overflow-hidden">
             <code className="p-2 text-primary font-mono">{text}</code>
-            <button 
+            <button
                 onClick={() => copyToClipboard(text)}
                 className="p-2 hover:bg-gray-200"
                 title="Copy to clipboard"
@@ -55,7 +55,7 @@ export default function LandingPage() {
                         <div className="space-y-4">
                             <div className="flex items-center space-x-2 mb-8">
                                 <img src="/logo.png" alt="EcoHarvest Logo" className="h-10" />
-                                <span className="text-xl font-bold text-primary">EcoHarvest</span>
+                                <span className="text-xl font-bold text-primary">Diary Dashboard</span>
                             </div>
                         </div>
 
@@ -66,7 +66,7 @@ export default function LandingPage() {
                         <p className="flex space-x-4">
                             <Button onClick={handleLogin} variant={"default"}>
                                 Get Started
-                                <LogInIcon size={20} className="ml-2" />
+                                <NotebookIcon size={20} className="ml-2" />
                             </Button>
                             <Button onClick={scrollToFeatures} variant="outline">
                                 Help
@@ -79,10 +79,10 @@ export default function LandingPage() {
 
             <section id="help" className="px-6 py-8">
                 <div className="max-w-4xl mx-auto">
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        whileInView={{ opacity: 1 }} 
-                        viewport={{ once: true }} 
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
                         className="mb-16"
                     >
                         <h2 className="text-3xl font-bold mb-4">User Guide</h2>
@@ -94,8 +94,7 @@ export default function LandingPage() {
                     <div className="space-y-16">
                         {/* Combined Features Section */}
                         <div className="space-y-8">
-                            <h3 className="text-2xl font-semibold">1. System Features</h3>
-                            
+
                             <div className="space-y-16">
                                 {/* Admin Features */}
                                 <div>
@@ -103,7 +102,7 @@ export default function LandingPage() {
                                     <p className="text-gray-600 mb-8">
                                         Farm administrators have full access to manage the entire system, including users, activities, finances, and reporting.
                                     </p>
-                                    
+
                                     <div className="space-y-12">
                                         {/* Admin Feature 1: User Management */}
                                         <div className="space-y-4">
@@ -112,9 +111,9 @@ export default function LandingPage() {
                                                 Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/user-management.jpg" 
-                                                    alt="User Management" 
+                                                <img
+                                                    src="/user-management.jpg"
+                                                    alt="User Management"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -122,7 +121,7 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Admin Feature 2: Financial Tracking */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Financial Analytics</h5>
@@ -130,9 +129,9 @@ export default function LandingPage() {
                                                 Record revenue and expenses. Generate profit reports and financial analyses with visual charts.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="home-analytics.jpg" 
-                                                    alt="Financial Analytics" 
+                                                <img
+                                                    src="home-analytics.jpg"
+                                                    alt="Financial Analytics"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -140,7 +139,7 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Admin Feature 3: Schedule Creation */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Schedule Management</h5>
@@ -148,9 +147,9 @@ export default function LandingPage() {
                                                 Create and assign work schedules to staff members. Set recurring activities and manage calendar events.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/schedule-calendar.jpg" 
-                                                    alt="Schedule Management" 
+                                                <img
+                                                    src="/schedule-calendar.jpg"
+                                                    alt="Schedule Management"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -158,7 +157,7 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Admin Feature 5: Performance Tracking */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Staff Performance</h5>
@@ -166,9 +165,9 @@ export default function LandingPage() {
                                                 Monitor productivity metrics and generate performance reports for individual staff members.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/staff-performance.jpg" 
-                                                    alt="Performance Dashboard" 
+                                                <img
+                                                    src="/staff-performance.jpg"
+                                                    alt="Performance Dashboard"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -176,7 +175,7 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Admin Feature 6: Reporting */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Generate Report</h5>
@@ -184,9 +183,9 @@ export default function LandingPage() {
                                                 Generate comprehensive reports on farm operations, finances, and staff performance with export options.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/generate-report.jpg" 
-                                                    alt="Advanced Reporting" 
+                                                <img
+                                                    src="/generate-report.jpg"
+                                                    alt="Advanced Reporting"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -194,17 +193,17 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                            
+
                                     </div>
                                 </div>
-                                
+
                                 {/* Staff Features */}
                                 <div>
                                     <h4 className="text-xl font-medium mb-6">Staff Features</h4>
                                     <p className="text-gray-600 mb-8">
                                         Farm staff members have focused access to tools for daily activities, viewing schedules, and managing basic operational needs.
                                     </p>
-                                    
+
                                     <div className="space-y-12">
                                         {/* Staff Feature 1: Activity Logging */}
                                         <div className="space-y-4">
@@ -213,9 +212,9 @@ export default function LandingPage() {
                                                 Record daily activities with details on time spent, resources used, and outcomes achieved.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/create-activity.jpg" 
-                                                    alt="Activity Logging" 
+                                                <img
+                                                    src="/create-activity.jpg"
+                                                    alt="Activity Logging"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -223,7 +222,7 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Staff Feature 3: Inventory Requests */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Resource Requests</h5>
@@ -231,9 +230,9 @@ export default function LandingPage() {
                                                 Submit requests for required supplies, tools, and equipment with detailed justifications.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/request-inventory.jpg" 
-                                                    alt="Resource Requests" 
+                                                <img
+                                                    src="/request-inventory.jpg"
+                                                    alt="Resource Requests"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -241,9 +240,9 @@ export default function LandingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                     
-                                        
+
+
+
                                         {/* Staff Feature 5: Notifications */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Notification Center</h5>
@@ -251,9 +250,9 @@ export default function LandingPage() {
                                                 Receive updates on schedule changes, request approvals, and system announcements in real-time.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
-                                                <img 
-                                                    src="/notification-schedule.jpg" 
-                                                    alt="Notification Center" 
+                                                <img
+                                                    src="/notification-schedule.jpg"
+                                                    alt="Notification Center"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
@@ -266,74 +265,7 @@ export default function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Installation Section */}
-                        <div className="space-y-8">
-                            <h3 className="text-2xl font-semibold" id="features">2. Installation</h3>
-                            
-                            <ol className="space-y-6">
-                                <li className="space-y-2">
-                                    <div className="font-medium">1. Install Node.js and MySQL Server</div>
-                                    <p className="text-gray-600">Download and install the latest versions from their official websites.</p>
-                                </li>
-                                
-                                <li className="space-y-2">
-                                    <div className="font-medium">2. Install project dependencies</div>
-                                    <p className="text-gray-600">Navigate to the project folder and run:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="pnpm install" />
-                                    </div>
-                                </li>
-                                
-                                <li className="space-y-2">
-                                    <div className="font-medium">3. Setup database</div>
-                                    <p className="text-gray-600">Initialize your database with:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="drizzle-kit migrate" />
-                                    </div>
-                                </li>
-                                
-                                <li className="space-y-2">
-                                    <div className="font-medium">4. Start the application</div>
-                                    <p className="text-gray-600">Run the development server:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="pnpm dev" />
-                                    </div>
-                                </li>
-                            </ol>
-                        </div>
 
-                        {/* Creating Users Section */}
-                        <div className="space-y-8">
-                            <h3 className="text-2xl font-semibold">3. Creating Users</h3>
-                            
-                            <p className="text-gray-600">Since the system starts without an admin, follow these steps:</p>
-                            
-                            <ol className="space-y-6">
-                                <li className="space-y-2">
-                                    <div className="font-medium">1. Create a branch</div>
-                                    <p className="text-gray-600">Access the branch creation URL:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="http://localhost:3000/farm/branch/add" />
-                                    </div>
-                                </li>
-                                
-                                <li className="space-y-2">
-                                    <div className="font-medium">2. Add a new user</div>
-                                    <p className="text-gray-600">Access the user creation URL:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="http://localhost:3000/farm/user/add" />
-                                    </div>
-                                </li>
-                                
-                                <li className="space-y-2">
-                                    <div className="font-medium">3. Update user role in database</div>
-                                    <p className="text-gray-600">Use a database client to update the user role to admin:</p>
-                                    <div className="mt-2 max-w-md">
-                                        <Command text="UPDATE users SET role = 'admin' WHERE email = 'youremail@example.com';" />
-                                    </div>
-                                </li>
-                            </ol>
-                        </div>
                     </div>
                 </div>
             </section>
