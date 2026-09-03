@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../drizzle/db';
-<<<<<<< Updated upstream
-import { activitiesTable, activityResourcesTable, branchesTable, performanceTable, resourcesTable, schedulesTable, usersTable } from '../../../drizzle/db/schema';
-=======
 import {
   activitiesTable,
   activityResourcesTable,
@@ -12,7 +9,6 @@ import {
   schedulesTable,
   usersTable,
 } from '../../../drizzle/db/schema';
->>>>>>> Stashed changes
 import { sql } from 'drizzle-orm';
 
 export async function GET() {
@@ -21,16 +17,6 @@ export async function GET() {
     const activitiesByType = await db
       .select({
         activityType: activitiesTable.activityType,
-<<<<<<< Updated upstream
-        totalAmount: sql<number>`SUM(${activitiesTable.amount})`,
-        revenueAmount: sql<number>`SUM(CASE WHEN ${activitiesTable.activityType} = 'revenue' THEN ${activitiesTable.amount} ELSE 0 END)`,
-        expenseAmount: sql<number>`SUM(CASE WHEN ${activitiesTable.activityType} = 'expense' THEN ${activitiesTable.amount} ELSE 0 END)`,
-        netProfit: sql<number>`SUM(CASE WHEN ${activitiesTable.activityType} = 'revenue' THEN ${activitiesTable.amount} ELSE 0 END) - SUM(CASE WHEN ${activitiesTable.activityType} = 'expense' THEN ${activitiesTable.amount} ELSE 0 END)`,
-        activities: sql<string[]>`COALESCE(STRING_AGG(${activitiesTable.description}, ', '), '')`,
-      })
-      .from(activitiesTable)
-      .where(sql`${activitiesTable.activityType} != 'Neutral'`)
-=======
         totalAmount: sql<number>`COALESCE(SUM(${activitiesTable.amount})::int, 0)`,
         revenueAmount: sql<number>`COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'revenue' THEN ${activitiesTable.amount} ELSE 0 END)::int, 0)`,
         expenseAmount: sql<number>`COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'expense' THEN ${activitiesTable.amount} ELSE 0 END)::int, 0)`,
@@ -39,7 +25,6 @@ export async function GET() {
       })
       .from(activitiesTable)
       .where(sql`LOWER(${activitiesTable.activityType}) != 'neutral'`)
->>>>>>> Stashed changes
       .groupBy(activitiesTable.activityType);
 
     // Fetch detailed activity list grouped by activity ID
@@ -50,20 +35,6 @@ export async function GET() {
         description: activitiesTable.description,
         amount: activitiesTable.amount,
         createdAt: activitiesTable.createdAt,
-<<<<<<< Updated upstream
-        resourcesUsed: sql<string>`COALESCE(STRING_AGG(DISTINCT
-            ${resourcesTable.name} || ' (' || ${activityResourcesTable.allocatedQuantity} || ' ' || ${resourcesTable.unit} || ')',
-            ', '), '')`,
-        assignedStaff: sql<string>`COALESCE(STRING_AGG(DISTINCT
-            ${usersTable.username} || ' [' || ${performanceTable.status} || ']',
-            ', '), '')`,
-        upcomingDates: sql<string>`COALESCE(STRING_AGG(DISTINCT
-            TO_CHAR(${schedulesTable.scheduledDate}, 'YYYY-MM-DD'),
-            ', '), '')`,
-        involvedBranches: sql<string>`COALESCE(STRING_AGG(DISTINCT
-            ${branchesTable.location},
-            ', '), '')`
-=======
         resourcesUsed: sql<string>`COALESCE(STRING_AGG(DISTINCT 
             CASE WHEN ${resourcesTable.name} IS NOT NULL 
                  THEN CONCAT(${resourcesTable.name}, ' (', ${activityResourcesTable.allocatedQuantity}, ' ', ${resourcesTable.unit}, ')') 
@@ -84,7 +55,6 @@ export async function GET() {
                  THEN ${branchesTable.location} 
             END, 
             ', '), '')`,
->>>>>>> Stashed changes
       })
       .from(activitiesTable)
       .leftJoin(activityResourcesTable, sql`${activityResourcesTable.activityId} = ${activitiesTable.id}`)
@@ -93,9 +63,6 @@ export async function GET() {
       .leftJoin(usersTable, sql`${usersTable.id} = ${performanceTable.userId}`)
       .leftJoin(branchesTable, sql`${branchesTable.id} = ${usersTable.branchId}`)
       .leftJoin(schedulesTable, sql`${schedulesTable.activityId} = ${activitiesTable.id}`)
-<<<<<<< Updated upstream
-      .groupBy(activitiesTable.id);
-=======
       .groupBy(
         activitiesTable.id,
         activitiesTable.activityType,
@@ -103,7 +70,6 @@ export async function GET() {
         activitiesTable.amount,
         activitiesTable.createdAt
       );
->>>>>>> Stashed changes
 
     // Fetch notifications from the schedules table
     const notifications = await db

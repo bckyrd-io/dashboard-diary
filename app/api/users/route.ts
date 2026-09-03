@@ -25,11 +25,7 @@ export async function POST(req: NextRequest) {
             role,
             branchId: Number(branchId),
             image: profilePicture || null, // Save the image URL (or null if no image)
-<<<<<<< Updated upstream
-        }).returning();
-=======
         }).returning({ id: usersTable.id });
->>>>>>> Stashed changes
 
         // Send the inserted user as response
         return NextResponse.json(user, { status: 200 });

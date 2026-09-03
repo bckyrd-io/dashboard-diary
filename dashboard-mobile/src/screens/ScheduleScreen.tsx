@@ -1,78 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
-<<<<<<< Updated upstream
-  ScrollView,
-=======
-  FlatList,
->>>>>>> Stashed changes
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
   Modal,
+  ScrollView,
   TouchableOpacity,
-<<<<<<< Updated upstream
   StyleSheet,
 } from 'react-native';
+import { Calendar, DateData } from 'react-native-calendars';
 import { api } from '../services/api';
 import { Card, Button, EmptyState, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
-=======
-  ScrollView,
-} from 'react-native';
-import { api } from '../services/api';
-import { Card, Button, EmptyState, ScreenHeader } from '../components/ui';
->>>>>>> Stashed changes
 
 interface CalendarEvent {
   id: string;
   title: string;
   start: string;
   end?: string;
-  color?: string;
-  extendedProps?: { description: string };
 }
 
 interface Notification {
   notificationMessage: string;
-}
-
-function EventCard({ event }: { event: CalendarEvent }) {
-  const start = new Date(event.start);
-  return (
-<<<<<<< Updated upstream
-    <Card style={styles.eventCard}>
-      <View style={styles.eventRow}>
-        <View style={styles.dateBadge}>
-          <Text style={styles.dateDay}>{start.getDate()}</Text>
-          <Text style={styles.dateMonth}>
-            {start.toLocaleDateString('en', { month: 'short' })}
-          </Text>
-        </View>
-        <View style={styles.eventContent}>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-          {event.end && (
-            <Text style={styles.eventEndDate}>
-=======
-    <Card className="mb-3 border-l-4 border-primary">
-      <View className="flex-row items-start">
-        <View className="bg-primary-light rounded-lg px-3 py-2 mr-3 items-center min-w-[50px]">
-          <Text className="text-primary font-bold text-lg">{start.getDate()}</Text>
-          <Text className="text-primary text-xs">{start.toLocaleDateString('en', { month: 'short' })}</Text>
-        </View>
-        <View className="flex-1">
-          <Text className="font-semibold text-gray-900 text-sm leading-snug">{event.title}</Text>
-          {event.end && (
-            <Text className="text-gray-400 text-xs mt-1">
->>>>>>> Stashed changes
-              Until: {new Date(event.end).toLocaleDateString()}
-            </Text>
-          )}
-        </View>
-      </View>
-    </Card>
-  );
 }
 
 export default function ScheduleScreen() {
@@ -81,6 +32,7 @@ export default function ScheduleScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
   const [error, setError] = useState('');
 
   const fetchData = async () => {
@@ -89,24 +41,14 @@ export default function ScheduleScreen() {
         api.get<{ success: boolean; events: CalendarEvent[] }>('/api/schedules'),
         api.get<{ notifications: Notification[] }>('/api/dashboard'),
       ]);
-
       if (schedulesRes.success) {
-<<<<<<< Updated upstream
         setEvents(
           schedulesRes.events.map((e) => ({
             ...e,
-            title:
-              e.title.length > 40 ? `${e.title.substring(0, 40)}...` : e.title,
+            title: e.title.length > 40 ? `${e.title.substring(0, 40)}...` : e.title,
           }))
         );
-=======
-        setEvents(schedulesRes.events.map((e) => ({
-          ...e,
-          title: e.title.length > 40 ? `${e.title.substring(0, 40)}...` : e.title,
-        })));
->>>>>>> Stashed changes
       }
-
       const notifs = dashRes.notifications ?? [];
       setNotifications(notifs);
       if (notifs.length > 0) setShowNotifications(true);
@@ -119,81 +61,63 @@ export default function ScheduleScreen() {
     }
   };
 
-<<<<<<< Updated upstream
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+  // Build marked dates from events
+  const markedDates = useMemo(() => {
+    const marks: Record<string, any> = {};
+    events.forEach((e) => {
+      const dateStr = e.start.split('T')[0];
+      if (!marks[dateStr]) {
+        marks[dateStr] = { dots: [], marked: true };
+      }
+      marks[dateStr].dots.push({ key: e.id, color: Theme.primary });
+    });
+
+    // Mark selected date
+    if (selectedDate) {
+      if (marks[selectedDate]) {
+        marks[selectedDate] = { ...marks[selectedDate], selected: true, selectedColor: Theme.primary };
+      } else {
+        marks[selectedDate] = { selected: true, selectedColor: Theme.primary };
+      }
+    }
+
+    return marks;
+  }, [events, selectedDate]);
+
+  // Events for selected date
+  const selectedEvents = useMemo(() => {
+    if (!selectedDate) return [];
+    return events.filter((e) => e.start.startsWith(selectedDate));
+  }, [events, selectedDate]);
+
+  const onDayPress = (day: DateData) => {
+    setSelectedDate(day.dateString);
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.loading}>
         <ActivityIndicator size="large" color={Theme.primary} />
         <Text style={styles.loadingText}>Loading schedule...</Text>
-=======
-  useEffect(() => { fetchData(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchData(); };
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
-        <ActivityIndicator size="large" color="#33b76d" />
-        <Text className="text-gray-500 mt-3">Loading schedule...</Text>
->>>>>>> Stashed changes
       </View>
     );
   }
 
-<<<<<<< Updated upstream
-  const grouped: Record<string, CalendarEvent[]> = {};
-  events.forEach((e) => {
-    const month = new Date(e.start).toLocaleDateString('en', {
-      month: 'long',
-      year: 'numeric',
-    });
-=======
-  // Group events by month
-  const grouped: Record<string, CalendarEvent[]> = {};
-  events.forEach((e) => {
-    const month = new Date(e.start).toLocaleDateString('en', { month: 'long', year: 'numeric' });
->>>>>>> Stashed changes
-    if (!grouped[month]) grouped[month] = [];
-    grouped[month].push(e);
-  });
-
-  const sections = Object.entries(grouped);
-
   return (
-<<<<<<< Updated upstream
-    <SafeAreaView style={styles.safeArea}>
-      <Modal visible={showNotifications} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>📣 Scheduled Notifications</Text>
-            <ScrollView style={styles.modalScroll}>
-              {notifications.map((n, i) => (
-                <View key={i} style={styles.notificationRow}>
-                  <Text style={styles.notificationArrow}>➞</Text>
-                  <Text style={styles.notificationText}>
-                    {n.notificationMessage}
-                  </Text>
-=======
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={styles.container}>
       {/* Notifications modal */}
       <Modal visible={showNotifications} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 justify-center px-6">
-          <View className="bg-white rounded-3xl p-6">
-            <Text className="text-xl font-bold text-gray-900 mb-4">📣 Scheduled Notifications</Text>
-            <ScrollView className="max-h-64 mb-4">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>📣 Scheduled Notifications</Text>
+            <ScrollView style={{ maxHeight: 256, marginBottom: 16 }}>
               {notifications.map((n, i) => (
-                <View key={i} className="flex-row items-start mb-3">
-                  <Text className="text-primary mr-2 mt-0.5">➞</Text>
-                  <Text className="text-gray-700 text-sm flex-1">{n.notificationMessage}</Text>
->>>>>>> Stashed changes
+                <View key={i} style={styles.notifRow}>
+                  <Text style={{ color: Theme.primary, marginRight: 8, marginTop: 2 }}>➞</Text>
+                  <Text style={styles.notifText}>{n.notificationMessage}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -202,8 +126,7 @@ export default function ScheduleScreen() {
         </View>
       </Modal>
 
-<<<<<<< Updated upstream
-      <View style={styles.headerContainer}>
+      <View style={{ paddingBottom: 4 }}>
         <ScreenHeader
           title="Schedule"
           description={`${events.length} upcoming events`}
@@ -211,11 +134,9 @@ export default function ScheduleScreen() {
             notifications.length > 0 ? (
               <TouchableOpacity
                 onPress={() => setShowNotifications(true)}
-                style={styles.notificationButton}
+                style={styles.notifBtn}
               >
-                <Text style={styles.notificationCount}>
-                  {notifications.length}
-                </Text>
+                <Text style={styles.notifCount}>{notifications.length}</Text>
               </TouchableOpacity>
             ) : null
           }
@@ -223,196 +144,101 @@ export default function ScheduleScreen() {
       </View>
 
       {error ? (
-        <View style={styles.errorContainer}>
-          <Card style={styles.errorCard}>
-            <Text style={styles.errorText}>{error}</Text>
-=======
-      <View className="pb-2">
-        <ScreenHeader title="Schedule" description={`${events.length} upcoming events`} action={notifications.length > 0 ? <TouchableOpacity onPress={() => setShowNotifications(true)} className="bg-yellow-50 px-3 py-2 rounded-md border border-yellow-200"><Text className="text-yellow-700 text-sm font-semibold">{notifications.length}</Text></TouchableOpacity> : null} />
-      </View>
-
-      {error ? (
-        <View className="px-4 mb-2">
-          <Card className="bg-red-50 border-red-200">
-            <Text className="text-red-600 text-center">{error}</Text>
->>>>>>> Stashed changes
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+          <Card style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+            <Text style={{ color: Theme.destructive, textAlign: 'center' }}>{error}</Text>
           </Card>
         </View>
       ) : null}
 
       <ScrollView
-<<<<<<< Updated upstream
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Theme.primary}
-          />
-        }
-        contentContainerStyle={styles.scrollContent}
-=======
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#33b76d" />}
-        contentContainerClassName="px-4 pb-10"
->>>>>>> Stashed changes
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.primary} />}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {sections.length === 0 ? (
-          <EmptyState message="No events scheduled" />
-        ) : (
-          sections.map(([month, evts]) => (
-            <View key={month}>
-<<<<<<< Updated upstream
-              <Text style={styles.monthHeader}>{month}</Text>
-              {evts.map((e) => (
-                <EventCard key={e.id} event={e} />
-              ))}
-=======
-              <Text className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3 mt-4">
-                {month}
-              </Text>
-              {evts.map((e) => <EventCard key={e.id} event={e} />)}
->>>>>>> Stashed changes
-            </View>
-          ))
-        )}
+        {/* Calendar */}
+        <Calendar
+          markedDates={markedDates}
+          onDayPress={onDayPress}
+          theme={{
+            backgroundColor: Theme.background,
+            calendarBackground: Theme.background,
+            textSectionTitleColor: Theme.mutedForeground,
+            selectedDayBackgroundColor: Theme.primary,
+            selectedDayTextColor: '#ffffff',
+            todayTextColor: Theme.primary,
+            dayTextColor: Theme.foreground,
+            textDisabledColor: Theme.gray300,
+            dotColor: Theme.primary,
+            selectedDotColor: '#ffffff',
+            arrowColor: Theme.primary,
+            textDayFontWeight: '500',
+            textMonthFontWeight: 'bold',
+            textDayHeaderFontWeight: '500',
+            textDayFontSize: 15,
+            textMonthFontSize: 16,
+            textDayHeaderFontSize: 13,
+          }}
+          markingType="multi-dot"
+        />
+
+        {/* Events for selected date */}
+        <View style={styles.eventsSection}>
+          <Text style={styles.eventsTitle}>
+            {selectedDate
+              ? `Events on ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}`
+              : 'Select a date to view events'}
+          </Text>
+
+          {selectedEvents.length > 0 ? (
+            selectedEvents.map((event) => (
+              <Card key={event.id} style={styles.eventCard}>
+                <View style={styles.eventRow}>
+                  <View style={styles.eventDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    <Text style={styles.eventTime}>
+                      {new Date(event.start).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            ))
+          ) : selectedDate ? (
+            <Card style={{ padding: 24, alignItems: 'center' }}>
+              <Text style={{ color: Theme.mutedForeground }}>No events on this date</Text>
+            </Card>
+          ) : (
+            <EmptyState message="Tap a date on the calendar to see scheduled events" />
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-<<<<<<< Updated upstream
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Theme.gray50,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.gray50,
-  },
-  loadingText: {
-    color: Theme.gray500,
-    marginTop: 12,
-  },
-  headerContainer: {
-    paddingBottom: 8,
-  },
-  errorContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  errorCard: {
-    backgroundColor: Theme.errorLight,
-    borderColor: '#fecaca',
-  },
-  errorText: {
-    color: Theme.error,
-    textAlign: 'center',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  monthHeader: {
-    fontWeight: 'bold',
-    color: Theme.gray500,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 12,
-    marginTop: 16,
-  },
-  eventCard: {
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.primary,
-  },
-  eventRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  dateBadge: {
-    backgroundColor: Theme.primaryLight,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 12,
-    alignItems: 'center',
-    minWidth: 50,
-  },
-  dateDay: {
-    color: Theme.primary,
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  dateMonth: {
-    color: Theme.primary,
-    fontSize: 12,
-  },
-  eventContent: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontWeight: '600',
-    color: Theme.gray900,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  eventEndDate: {
-    color: Theme.gray400,
-    fontSize: 12,
-    marginTop: 4,
-  },
+  container: { flex: 1, backgroundColor: Theme.muted },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
+  loadingText: { color: Theme.mutedForeground, marginTop: 12 },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', paddingHorizontal: 24,
   },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 24,
+  modalCard: { backgroundColor: Theme.background, borderRadius: 24, padding: 24 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: Theme.foreground, marginBottom: 16 },
+  notifRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+  notifText: { color: Theme.gray700, fontSize: 14, flex: 1 },
+  notifBtn: {
+    backgroundColor: Theme.warningLight, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 8, borderWidth: 1, borderColor: '#fde68a',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.gray900,
-    marginBottom: 16,
+  notifCount: { color: '#92400e', fontSize: 13, fontWeight: '600' },
+  eventsSection: { paddingHorizontal: 16, paddingTop: 16 },
+  eventsTitle: { fontSize: 15, fontWeight: '600', color: Theme.gray700, marginBottom: 12 },
+  eventCard: { marginBottom: 8 },
+  eventRow: { flexDirection: 'row', alignItems: 'center' },
+  eventDot: {
+    width: 10, height: 10, borderRadius: 5, backgroundColor: Theme.primary, marginRight: 12,
   },
-  modalScroll: {
-    maxHeight: 256,
-    marginBottom: 16,
-  },
-  notificationRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  notificationArrow: {
-    color: Theme.primary,
-    marginRight: 8,
-    marginTop: 2,
-  },
-  notificationText: {
-    color: Theme.gray700,
-    fontSize: 14,
-    flex: 1,
-  },
-  notificationButton: {
-    backgroundColor: Theme.warningLight,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#fef3c7',
-  },
-  notificationCount: {
-    color: Theme.warning,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  eventTitle: { fontWeight: '600', color: Theme.foreground, fontSize: 14 },
+  eventTime: { color: Theme.mutedForeground, fontSize: 12, marginTop: 2 },
 });
-=======
->>>>>>> Stashed changes

@@ -6,10 +6,6 @@
     "paths": {
       "@/*": ["src/*"]
     },
-<<<<<<< Updated upstream
-=======
-    "types": ["nativewind/types"],
->>>>>>> Stashed changes
     "ignoreDeprecations": "6.0"
   }
 }

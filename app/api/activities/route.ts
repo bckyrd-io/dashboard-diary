@@ -15,23 +15,6 @@ export async function POST(req: Request) {
         activityType,
         amount: Number(amount),
         activityDate,
-<<<<<<< Updated upstream
-      }).returning();
-  
-      // If activityDate is in the future, create a schedule
-      if (new Date(activityDate) > new Date()) {
-        await db.insert(schedulesTable).values({
-          activityId: newActivity[0].id,
-          scheduledDate: activityDate,
-          notificationMessage: `Upcoming activity: ${description} on ${activityDate}`,
-        });
-      }
-  
-      return NextResponse.json({ success: true, activity: newActivity });
-    } catch (error) {
-      console.error('Error creating activity:', error);
-      return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-=======
       })
       .returning();
 
@@ -42,7 +25,6 @@ export async function POST(req: Request) {
         scheduledDate: activityDate,
         notificationMessage: `Upcoming activity: ${description} on ${activityDate}`,
       });
->>>>>>> Stashed changes
     }
 
     return NextResponse.json({ success: true, activity: newActivity });

@@ -14,13 +14,8 @@ export async function POST(req: Request) {
     try {
         const newResource = await db.insert(resourcesTable).values({
             name,
-<<<<<<< Updated upstream
-            quantity: quantity || 0,
-            unit: unit,
-=======
             quantity: quantity ? Number(quantity) : 0,
             unit: unit || null,
->>>>>>> Stashed changes
         }).returning();
 
         if (activityId) {

@@ -4,13 +4,8 @@ import { relations } from 'drizzle-orm';
 // Branches Table
 export const branchesTable = pgTable('branches', {
   id: serial('id').primaryKey(),
-<<<<<<< Updated upstream
-  name: text('name').notNull(),
-  location: text('location').notNull(),
-=======
   name: varchar('name', { length: 255 }).notNull(),
   location: varchar('location', { length: 255 }).notNull(),
->>>>>>> Stashed changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
@@ -18,21 +13,12 @@ export const branchesTable = pgTable('branches', {
 // Users Table
 export const usersTable = pgTable('users', {
   id: serial('id').primaryKey(),
-<<<<<<< Updated upstream
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  email: text('email').notNull().unique(),
-  branchId: integer('branch_id').notNull().references(() => branchesTable.id),
-  role: text('role').notNull().default('Staff'),
-  image: text('image'),
-=======
   username: varchar('username', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   branchId: integer('branch_id').notNull().references(() => branchesTable.id),
   role: varchar('role', { length: 50 }).notNull().default('Staff'),
   image: varchar('image', { length: 255 }),
->>>>>>> Stashed changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
@@ -50,15 +36,9 @@ export const activitiesTable = pgTable('activities', {
 // Resources Table
 export const resourcesTable = pgTable('resources', {
   id: serial('id').primaryKey(),
-<<<<<<< Updated upstream
-  name: text('name').notNull(),
-  quantity: integer('quantity').notNull().default(0),
-  unit: text('unit'),
-=======
   name: varchar('name', { length: 255 }).notNull(),
   quantity: integer('quantity').notNull().default(0),
   unit: varchar('unit', { length: 50 }),
->>>>>>> Stashed changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
@@ -83,11 +63,7 @@ export const schedulesTable = pgTable('schedules', {
     .notNull()
     .references(() => activitiesTable.id, { onDelete: 'cascade' }),
   scheduledDate: date('scheduled_date').notNull(),
-<<<<<<< Updated upstream
-  notificationMessage: text('notification_message'),
-=======
   notificationMessage: varchar('notification_message', { length: 255 }),
->>>>>>> Stashed changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -100,11 +76,7 @@ export const performanceTable = pgTable('performance', {
   activityId: integer('activity_id')
     .notNull()
     .references(() => activitiesTable.id, { onDelete: 'cascade' }),
-<<<<<<< Updated upstream
-  status: text('status').notNull().default('Assigned'),
-=======
   status: varchar('status', { length: 50 }).notNull().default('Assigned'), // Assigned, In Progress, Completed
->>>>>>> Stashed changes
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });

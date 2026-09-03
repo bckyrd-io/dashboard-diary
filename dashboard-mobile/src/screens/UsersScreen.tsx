@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-<<<<<<< Updated upstream
 import {
   ActivityIndicator,
   FlatList,
@@ -9,14 +8,10 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
-=======
-import { ActivityIndicator, FlatList, RefreshControl, SafeAreaView, Text, View } from 'react-native';
->>>>>>> Stashed changes
 import { useNavigation } from '@react-navigation/native';
 import { Mail, UserPlus, Users as UsersIcon } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Badge, Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
-<<<<<<< Updated upstream
 import { Theme } from '../constants/Theme';
 
 interface User {
@@ -26,10 +21,6 @@ interface User {
   role: string;
   createdAt: string;
 }
-=======
-
-interface User { id: number; username: string; email: string; role: string; createdAt: string; }
->>>>>>> Stashed changes
 
 export default function UsersScreen() {
   const navigation = useNavigation();
@@ -53,42 +44,35 @@ export default function UsersScreen() {
 
   useEffect(() => { fetchUsers(); }, []);
 
-<<<<<<< Updated upstream
-  if (loading) {
+  if (loading)
     return (
-      <View style={s.loadingContainer}>
+      <View style={styles.loading}>
         <ActivityIndicator color={Theme.primary} />
       </View>
     );
-  }
 
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="User Management"
         description={`${users.length} team members`}
         action={
-          <Button variant="default" onPress={() => navigation.navigate('AddUser' as never)}>
-            <View style={s.actionRow}>
-              <UserPlus size={16} color={Theme.background} />
-              <Text style={s.actionText}>Add</Text>
+          <Button
+            style={{ paddingHorizontal: 12 }}
+            onPress={() => navigation.navigate('AddUser' as never)}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <UserPlus size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 4 }}>Add</Text>
             </View>
           </Button>
         }
       />
-=======
-  if (loading) return <View className="flex-1 items-center justify-center bg-gray-50"><ActivityIndicator color="#33b76d" /></View>;
-
-  return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScreenHeader title="User Management" description={`${users.length} team members`} action={<Button className="px-3" onPress={() => navigation.navigate('AddUser' as never)}><UserPlus size={16} color="#fff" /><Text className="text-white font-semibold ml-1">Add</Text></Button>} />
->>>>>>> Stashed changes
       {error ? <ErrorState message={error} /> : null}
       <FlatList
         data={users}
         keyExtractor={(item) => String(item.id)}
-<<<<<<< Updated upstream
-        contentContainerStyle={s.listContent}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -98,28 +82,18 @@ export default function UsersScreen() {
         }
         ListEmptyComponent={<EmptyState icon={UsersIcon} message="No users found" />}
         renderItem={({ item }) => (
-          <Card style={s.card}>
-            <View style={s.cardRow}>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+          <Card style={{ marginBottom: 12 }}>
+            <View style={styles.userRow}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
               </View>
-              <View style={s.userInfo}>
-                <Text style={s.username}>{item.username}</Text>
-                <View style={s.emailRow}>
-                  <Mail size={13} color={Theme.gray500} />
-                  <Text style={s.emailText}>{item.email}</Text>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.userName}>{item.username}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <Mail size={13} color={Theme.mutedForeground} />
+                  <Text style={styles.userEmail}>{item.email}</Text>
                 </View>
               </View>
-=======
-        contentContainerClassName="px-4 pb-10"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchUsers(); }} tintColor="#33b76d" />}
-        ListEmptyComponent={<EmptyState icon={UsersIcon} message="No users found" />}
-        renderItem={({ item }) => (
-          <Card className="mb-3">
-            <View className="flex-row items-center">
-              <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"><Text className="text-gray-700 font-bold">{item.username.charAt(0).toUpperCase()}</Text></View>
-              <View className="flex-1 ml-3"><Text className="font-semibold text-gray-950">{item.username}</Text><View className="flex-row items-center mt-1"><Mail size={13} color="#6b7280" /><Text className="text-gray-500 text-xs ml-1">{item.email}</Text></View></View>
->>>>>>> Stashed changes
               <Badge label={item.role} variant="outline" />
             </View>
           </Card>
@@ -128,69 +102,16 @@ export default function UsersScreen() {
     </SafeAreaView>
   );
 }
-<<<<<<< Updated upstream
 
-const s = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Theme.gray50,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.gray50,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionText: {
-    color: Theme.background,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    marginBottom: 12,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Theme.muted },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
+  userRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Theme.gray100,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Theme.gray100,
+    alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: {
-    color: Theme.gray700,
-    fontWeight: 'bold',
-  },
-  userInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  username: {
-    fontWeight: '600',
-    color: Theme.gray900,
-  },
-  emailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  emailText: {
-    color: Theme.gray500,
-    fontSize: 12,
-    marginLeft: 4,
-  },
+  avatarText: { color: Theme.gray700, fontWeight: 'bold', fontSize: 16 },
+  userName: { fontWeight: '600', color: Theme.gray900 },
+  userEmail: { color: Theme.mutedForeground, fontSize: 12, marginLeft: 4 },
 });
-=======
->>>>>>> Stashed changes
