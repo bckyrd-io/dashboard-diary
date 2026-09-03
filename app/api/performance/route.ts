@@ -1,6 +1,7 @@
 import { db } from "../../../drizzle/db";
 import { performanceTable, activitiesTable, usersTable, branchesTable } from "../../../drizzle/db/schema";
-import { eq, or, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 // Fetch all performances or specific user's performances
 export async function GET(req: Request) {
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
                     )
                 );
 
-            return new Response(JSON.stringify({ success: true, performance: performances }), {
+            return NextResponse.json({ success: true, performance: performances }, {
                 status: 200,
             });
         } else {
@@ -54,13 +55,13 @@ export async function GET(req: Request) {
                 .leftJoin(activitiesTable, eq(performanceTable.activityId, activitiesTable.id))
                 .where(eq(usersTable.role, "Staff"));
 
-            return new Response(JSON.stringify({ success: true, performance: performances }), {
+            return NextResponse.json({ success: true, performance: performances }, {
                 status: 200,
             });
         }
     } catch (error) {
         console.error("Error fetching performance data:", error);
-        return new Response(JSON.stringify({ success: false, message: "Server error" }), {
+        return NextResponse.json({ success: false, message: "Server error" }, {
             status: 500,
         });
     }
@@ -72,18 +73,18 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         const newPerformance = await db.insert(performanceTable).values({
-            userId: body.userId,
-            activityId: body.activityId,
-            status: body.status,
-            updatedAt: new Date(), // Use Date object directly
-        });
+            userId: Number(body.userId),
+            activityId: Number(body.activityId),
+            status: body.status || "Assigned",
+            updatedAt: new Date(),
+        }).returning();
 
-        return new Response(JSON.stringify({ success: true, performance: newPerformance }), {
+        return NextResponse.json({ success: true, performance: newPerformance }, {
             status: 201,
         });
     } catch (error) {
         console.error("Error creating performance entry:", error);
-        return new Response(JSON.stringify({ success: false, message: "Server error" }), {
+        return NextResponse.json({ success: false, message: "Server error" }, {
             status: 500,
         });
     }

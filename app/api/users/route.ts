@@ -6,29 +6,30 @@ import bcrypt from 'bcryptjs'; // For password hashing
 // Handle POST requests to create a new user
 export async function POST(req: NextRequest) {
     const { username, email, password, branchId, profilePicture } = await req.json();
-    console.log("the problem is here 0");
+
     // Validate required fields
     if (!username || !email || !password || !branchId) {
         return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    console.log("the problem is here 1");
-    // Set default role
     const role: string = "Staff";
     try {
         // Hash the password before saving it
         const passwordHash = await bcrypt.hash(password, 10);
 
-        console.log("the problem is here 2");
         // Insert the new user into the database
         const [user] = await db.insert(usersTable).values({
             username,
             email,
             passwordHash, // Store hashed password
             role,
-            branchId,
+            branchId: Number(branchId),
             image: profilePicture || null, // Save the image URL (or null if no image)
+<<<<<<< Updated upstream
         }).returning();
+=======
+        }).returning({ id: usersTable.id });
+>>>>>>> Stashed changes
 
         // Send the inserted user as response
         return NextResponse.json(user, { status: 200 });
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Get all resources
+// Get all users
 export async function GET() {
     try {
         const users = await db.select().from(usersTable);

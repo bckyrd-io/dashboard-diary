@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+<<<<<<< Updated upstream
     "@expo/ui": "~57.0.15",
+=======
+>>>>>>> Stashed changes
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-navigation/bottom-tabs": "^7.18.18",
     "@react-navigation/drawer": "^7.13.10",
@@ -28,8 +31,11 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.8",
+<<<<<<< Updated upstream
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+=======
+>>>>>>> Stashed changes
     "typescript": "~6.0.3"
   },
   "scripts": {

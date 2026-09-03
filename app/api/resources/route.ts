@@ -14,16 +14,21 @@ export async function POST(req: Request) {
     try {
         const newResource = await db.insert(resourcesTable).values({
             name,
+<<<<<<< Updated upstream
             quantity: quantity || 0,
             unit: unit,
+=======
+            quantity: quantity ? Number(quantity) : 0,
+            unit: unit || null,
+>>>>>>> Stashed changes
         }).returning();
 
         if (activityId) {
             await db.insert(activityResourcesTable).values({
-                activityId,
+                activityId: Number(activityId),
                 resourceId: newResource[0].id,
-                allocatedQuantity: allocatedQuantity || 0,
-            });
+                allocatedQuantity: allocatedQuantity ? Number(allocatedQuantity) : 0,
+            }).returning();
         }
 
         return NextResponse.json({ success: true, resource: newResource });
@@ -48,7 +53,7 @@ export async function GET() {
 export async function PUT(req: Request) {
     const { id, name, quantity, unit, activityId, allocatedQuantity } = await req.json();
 
-    if (!id || !name ) {
+    if (!id || !name) {
         return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
     }
 
@@ -57,16 +62,18 @@ export async function PUT(req: Request) {
             .update(resourcesTable)
             .set({
                 name,
-                quantity: quantity || 0,
-                unit: unit,
+                quantity: quantity !== undefined ? Number(quantity) : 0,
+                unit: unit || null,
             })
-            .where(eq(resourcesTable.id, id));
+            .where(eq(resourcesTable.id, Number(id)))
+            .returning();
 
         if (activityId) {
             await db
                 .update(activityResourcesTable)
-                .set({ allocatedQuantity: allocatedQuantity || 0 })
-                .where(eq(activityResourcesTable.resourceId, id));
+                .set({ allocatedQuantity: allocatedQuantity !== undefined ? Number(allocatedQuantity) : 0 })
+                .where(eq(activityResourcesTable.resourceId, Number(id)))
+                .returning();
         }
 
         return NextResponse.json({ success: true, resource: updatedResource });
@@ -85,10 +92,10 @@ export async function DELETE(req: Request) {
     }
 
     try {
-        await db.delete(activityResourcesTable).where(eq(activityResourcesTable.resourceId, id));
-        const deletedCount = await db.delete(resourcesTable).where(eq(resourcesTable.id, id));
+        await db.delete(activityResourcesTable).where(eq(activityResourcesTable.resourceId, Number(id)));
+        const deletedCount = await db.delete(resourcesTable).where(eq(resourcesTable.id, Number(id))).returning();
 
-        if (!deletedCount) {
+        if (!deletedCount || deletedCount.length === 0) {
             return NextResponse.json({ success: false, message: 'Resource not found' }, { status: 404 });
         }
 

@@ -1,108 +1,102 @@
 # Dashboard Diary (Next-Type)
 
-Dashboard Diary is a web application built with **Next.js**. It currently features a responsive Next.js web frontend, with an API backend connected to a Postgres database using Drizzle ORM. 
+Dashboard Diary is a farm management web application built with **Next.js**, **PostgreSQL**, and **Drizzle ORM**. It features a responsive Next.js frontend with an API backend for tracking revenues, expenses, activities, resources, schedules, and staff performance.
 
-**Note on Mobile Development:** In the future, this project plans to introduce a mobile application built with **React Native / Expo**. You may see references to Expo in the directory structure or planned steps, but the application is currently actively using the Next.js UI for both web and mobile-web experiences.
+---
 
 ## Project Overview
 
 - **Frontend / Backend:**
-  - Developed using **Next.js** (Current UI).
+  - Developed using **Next.js** (App Router).
   - Handles API requests and serves the responsive web interface.
 - **Database:**
-  - **Postgres** integrated using **Drizzle ORM**.
-- **Future Upgrade:**
-  - A mobile-first **Expo** (React Native) app is planned for future cross-platform (iOS/Android) releases.
-- **Package Managers:**
-  - **Next.js Project**: Using **pnpm** for faster performance.
-  - *(Future)* **Expo App**: Will use npm (or eventually pnpm).
+  - **PostgreSQL** integrated using **Drizzle ORM** with connection pooling.
+- **Package Manager:**
+  - **pnpm** (or npm/yarn).
+
+---
 
 ## Features
 
-- Mobile-responsive web design currently powered by Next.js.
-- API endpoints in Next.js connected to a Postgres database via Drizzle ORM.
-- Current use case: **Farm Management** system, including:
-  - Tracking farm revenues.
-  - Tracking farm expenses.
-  - Branch and User management.
-  - More farm-related features to come.
+- **Farm Analytics Dashboard**: Metrics overview for total revenue, expenses, and net profit with interactive Recharts bar charts.
+- **Activity Tracking**: Manage and record farm revenues, expenses, and neutral operational activities.
+- **Resource Management**: Track machinery, fertilizers, seeds, irrigation equipment, and labor allocations.
+- **Schedules & Calendar**: Calendar views with FullCalendar for scheduled farm tasks and upcoming notifications.
+- **Staff & Branch Management**: Manage branches, assign staff members, and track performance statuses (Assigned, In Progress, Completed).
+- **Reports & PDF Export**: Detailed data tables with TanStack Table and one-click PDF generation via jsPDF & autoTable.
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
 Make sure you have the following installed:
-- **Node.js** (>= 18.x recommended)
-- **pnpm** (>= 7.x)
-- **Postgres Database**
+- **Node.js** (>= 18.x)
+- **pnpm** (or npm)
+- **PostgreSQL** (e.g., PostgreSQL 16 + pgAdmin 4 or cloud PostgreSQL like Supabase/Neon)
 
-### Installation
+### 1. Configure Environment Variables
 
-#### 1. Clone the Repository
+Create a `.env` or `.env.local` file in the root directory (see `.env.example`):
 
-```bash
-git clone <repository-url>
-cd dashboard-diary
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/dashboard_diary"
 ```
+*(Replace `postgres:postgres` with your PostgreSQL username and password if different).*
 
-#### 2. Install Dependencies
-
-Navigate to the project folder and run:
+### 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-#### 3. Database Setup
+### 3. Setup Database & Push Schema
 
-Ensure your Postgres database is up and running. 
-
-Create a `.env.local` or `.env` file in the root directory with your database credentials and other necessary environment variables:
-
-```env
-DATABASE_URL=your_postgres_database_url
-```
-
-Drizzle ORM will handle the database schema and migrations. To run migrations and push the schema:
+To create the tables in your PostgreSQL database:
 
 ```bash
-pnpm dlx drizzle-kit migrate
-# or depending on your package.json scripts:
-# pnpm run drizzle:sync
+pnpm db:push
 ```
 
-*(Optional)* If you are linking to an existing Vercel project's database:
+### 4. Seed Sample Test Data
+
+To populate your database with rich sample data (branches, users, activities, resources, schedules, and performance records):
 
 ```bash
-pnpm dlx vercel link
-pnpm dlx vercel env pull .env.development.local
+pnpm db:seed
 ```
 
-#### 4. Running the Application
-
-Run the development server:
+### 5. Run the Application
 
 ```bash
 pnpm dev
 ```
 
-This will start the Next.js application on [http://localhost:3000](http://localhost:3000).
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ---
 
-### Initial Setup: Creating Users
+## Default Seeded Credentials
 
-Since the system starts without an admin, follow these steps via the browser once the app is running:
+When seeded with `pnpm db:seed`, the following accounts are ready to use:
 
-1. **Create a branch:**
-   Navigate to `http://localhost:3000/farm/branch/add` and add a branch.
-2. **Add a new user:**
-   Navigate to `http://localhost:3000/farm/user/add` and create your user account.
-3. **Update user role in database:**
-   Use your database client to update the user's role to admin so you have full access:
-   ```sql
-   UPDATE users SET role = 'admin' WHERE email = 'youremail@example.com';
-   ```
+| Role | Username | Password | Email |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin` | `admin123` | `admin@farmdiary.com` |
+| **Staff** | `chimwemwe_banda` | `staff123` | `chimwemwe@farmdiary.com` |
+| **Staff** | `kondwani_phiri` | `staff123` | `kondwani@farmdiary.com` |
+| **Staff** | `talandira_tembo` | `staff123` | `talandira@farmdiary.com` |
+
+---
+
+## Database Helper Scripts
+
+- `pnpm db:push` - Synchronize and push Drizzle schema directly to PostgreSQL.
+- `pnpm db:generate` - Generate new SQL migration files in `drizzle/migrations/`.
+- `pnpm db:migrate` - Apply SQL migrations.
+- `pnpm db:seed` - Seed the database with realistic sample test data.
+- `pnpm db:studio` - Open Drizzle Studio visual database inspector in your browser.
 
 ---
 
@@ -111,32 +105,19 @@ Since the system starts without an admin, follow these steps via the browser onc
 ```text
 /
 ├── app/                  # Next.js App Router (Pages & API)
-│   ├── api/              # API Endpoints
-│   │   ├── activities/
-│   │   ├── persons/
-│   │   └── activity-persons/
-│   ...
-├── components/           # Reusable React components
-...
+│   ├── api/              # API Endpoints (dashboard, activities, branches, users, etc.)
+│   └── farm/             # Farm management pages (dashboard, report, activity, etc.)
+├── components/           # Reusable UI & Shadcn components
+├── drizzle/              # Database schema, connections, migrations, and seed script
+│   ├── db/
+│   │   ├── index.ts      # PostgreSQL connection pool & Drizzle instance
+│   │   └── schema.ts     # PostgreSQL schema definitions & relations
+│   └── seed.ts           # Test data generator
+└── public/               # Static assets
 ```
 
-### Future Expo App Structure
-
-Once the React Native / Expo migration begins, the app will include a separate directory structure (e.g., `/expo-app`) with mobile-specific screens, navigation, and components, which will connect to the existing Next.js API. 
-
-**Excluding Expo App from Vercel Deployment**
-To keep the future Expo app inside the project folder but exclude it from being deployed to Vercel, a `.vercelignore` file will be used with the path to the Expo directory.
-
-## Future Plans
-
-- **Implement the React Native / Expo App** for dedicated iOS and Android mobile experiences.
-- Migrate the future Expo app to use `pnpm` consistently.
-- Add more features for comprehensive farm management and tracking.
-
-## Contributing
-
-Contributions are welcome! Feel free to submit pull requests or open issues on GitHub to help improve the project.
+---
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.

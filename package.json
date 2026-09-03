@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx drizzle/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.15",
@@ -28,6 +33,7 @@
     "@shadcn/ui": "^0.0.4",
     "@tanstack/react-table": "^8.20.5",
     "@types/pdfmake": "^0.2.11",
+    "@types/pg": "^8.23.1",
     "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.0",
@@ -51,6 +57,7 @@
     "mysql2": "^3.12.0",
     "next": "15.0.2",
     "pdfmake": "^0.2.18",
+    "pg": "^8.23.0",
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-date-picker": "^11.0.0",
     "react-day-picker": "8.10.1",
@@ -73,11 +80,5 @@
     "tailwindcss": "^3.4.13",
     "tsx": "^4.21.0",
     "typescript": "^5"
-  },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "npm:types-react@19.0.0-rc.1",
-      "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
-    }
   }
 }

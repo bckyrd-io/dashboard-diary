@@ -2,17 +2,28 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
+<<<<<<< Updated upstream
   ScrollView,
+=======
+  FlatList,
+>>>>>>> Stashed changes
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
   Modal,
   TouchableOpacity,
+<<<<<<< Updated upstream
   StyleSheet,
 } from 'react-native';
 import { api } from '../services/api';
 import { Card, Button, EmptyState, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
+=======
+  ScrollView,
+} from 'react-native';
+import { api } from '../services/api';
+import { Card, Button, EmptyState, ScreenHeader } from '../components/ui';
+>>>>>>> Stashed changes
 
 interface CalendarEvent {
   id: string;
@@ -30,6 +41,7 @@ interface Notification {
 function EventCard({ event }: { event: CalendarEvent }) {
   const start = new Date(event.start);
   return (
+<<<<<<< Updated upstream
     <Card style={styles.eventCard}>
       <View style={styles.eventRow}>
         <View style={styles.dateBadge}>
@@ -42,6 +54,18 @@ function EventCard({ event }: { event: CalendarEvent }) {
           <Text style={styles.eventTitle}>{event.title}</Text>
           {event.end && (
             <Text style={styles.eventEndDate}>
+=======
+    <Card className="mb-3 border-l-4 border-primary">
+      <View className="flex-row items-start">
+        <View className="bg-primary-light rounded-lg px-3 py-2 mr-3 items-center min-w-[50px]">
+          <Text className="text-primary font-bold text-lg">{start.getDate()}</Text>
+          <Text className="text-primary text-xs">{start.toLocaleDateString('en', { month: 'short' })}</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="font-semibold text-gray-900 text-sm leading-snug">{event.title}</Text>
+          {event.end && (
+            <Text className="text-gray-400 text-xs mt-1">
+>>>>>>> Stashed changes
               Until: {new Date(event.end).toLocaleDateString()}
             </Text>
           )}
@@ -67,6 +91,7 @@ export default function ScheduleScreen() {
       ]);
 
       if (schedulesRes.success) {
+<<<<<<< Updated upstream
         setEvents(
           schedulesRes.events.map((e) => ({
             ...e,
@@ -74,6 +99,12 @@ export default function ScheduleScreen() {
               e.title.length > 40 ? `${e.title.substring(0, 40)}...` : e.title,
           }))
         );
+=======
+        setEvents(schedulesRes.events.map((e) => ({
+          ...e,
+          title: e.title.length > 40 ? `${e.title.substring(0, 40)}...` : e.title,
+        })));
+>>>>>>> Stashed changes
       }
 
       const notifs = dashRes.notifications ?? [];
@@ -88,6 +119,7 @@ export default function ScheduleScreen() {
     }
   };
 
+<<<<<<< Updated upstream
   useEffect(() => {
     fetchData();
   }, []);
@@ -102,16 +134,33 @@ export default function ScheduleScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Theme.primary} />
         <Text style={styles.loadingText}>Loading schedule...</Text>
+=======
+  useEffect(() => { fetchData(); }, []);
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <ActivityIndicator size="large" color="#33b76d" />
+        <Text className="text-gray-500 mt-3">Loading schedule...</Text>
+>>>>>>> Stashed changes
       </View>
     );
   }
 
+<<<<<<< Updated upstream
   const grouped: Record<string, CalendarEvent[]> = {};
   events.forEach((e) => {
     const month = new Date(e.start).toLocaleDateString('en', {
       month: 'long',
       year: 'numeric',
     });
+=======
+  // Group events by month
+  const grouped: Record<string, CalendarEvent[]> = {};
+  events.forEach((e) => {
+    const month = new Date(e.start).toLocaleDateString('en', { month: 'long', year: 'numeric' });
+>>>>>>> Stashed changes
     if (!grouped[month]) grouped[month] = [];
     grouped[month].push(e);
   });
@@ -119,6 +168,7 @@ export default function ScheduleScreen() {
   const sections = Object.entries(grouped);
 
   return (
+<<<<<<< Updated upstream
     <SafeAreaView style={styles.safeArea}>
       <Modal visible={showNotifications} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -131,6 +181,19 @@ export default function ScheduleScreen() {
                   <Text style={styles.notificationText}>
                     {n.notificationMessage}
                   </Text>
+=======
+    <SafeAreaView className="flex-1 bg-gray-50">
+      {/* Notifications modal */}
+      <Modal visible={showNotifications} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center px-6">
+          <View className="bg-white rounded-3xl p-6">
+            <Text className="text-xl font-bold text-gray-900 mb-4">📣 Scheduled Notifications</Text>
+            <ScrollView className="max-h-64 mb-4">
+              {notifications.map((n, i) => (
+                <View key={i} className="flex-row items-start mb-3">
+                  <Text className="text-primary mr-2 mt-0.5">➞</Text>
+                  <Text className="text-gray-700 text-sm flex-1">{n.notificationMessage}</Text>
+>>>>>>> Stashed changes
                 </View>
               ))}
             </ScrollView>
@@ -139,6 +202,7 @@ export default function ScheduleScreen() {
         </View>
       </Modal>
 
+<<<<<<< Updated upstream
       <View style={styles.headerContainer}>
         <ScreenHeader
           title="Schedule"
@@ -162,11 +226,22 @@ export default function ScheduleScreen() {
         <View style={styles.errorContainer}>
           <Card style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
+=======
+      <View className="pb-2">
+        <ScreenHeader title="Schedule" description={`${events.length} upcoming events`} action={notifications.length > 0 ? <TouchableOpacity onPress={() => setShowNotifications(true)} className="bg-yellow-50 px-3 py-2 rounded-md border border-yellow-200"><Text className="text-yellow-700 text-sm font-semibold">{notifications.length}</Text></TouchableOpacity> : null} />
+      </View>
+
+      {error ? (
+        <View className="px-4 mb-2">
+          <Card className="bg-red-50 border-red-200">
+            <Text className="text-red-600 text-center">{error}</Text>
+>>>>>>> Stashed changes
           </Card>
         </View>
       ) : null}
 
       <ScrollView
+<<<<<<< Updated upstream
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -175,16 +250,27 @@ export default function ScheduleScreen() {
           />
         }
         contentContainerStyle={styles.scrollContent}
+=======
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#33b76d" />}
+        contentContainerClassName="px-4 pb-10"
+>>>>>>> Stashed changes
       >
         {sections.length === 0 ? (
           <EmptyState message="No events scheduled" />
         ) : (
           sections.map(([month, evts]) => (
             <View key={month}>
+<<<<<<< Updated upstream
               <Text style={styles.monthHeader}>{month}</Text>
               {evts.map((e) => (
                 <EventCard key={e.id} event={e} />
               ))}
+=======
+              <Text className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-3 mt-4">
+                {month}
+              </Text>
+              {evts.map((e) => <EventCard key={e.id} event={e} />)}
+>>>>>>> Stashed changes
             </View>
           ))
         )}
@@ -192,6 +278,7 @@ export default function ScheduleScreen() {
     </SafeAreaView>
   );
 }
+<<<<<<< Updated upstream
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -327,3 +414,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+=======
+>>>>>>> Stashed changes

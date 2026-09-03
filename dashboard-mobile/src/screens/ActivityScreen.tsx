@@ -8,11 +8,17 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+<<<<<<< Updated upstream
   StyleSheet,
 } from 'react-native';
 import { api } from '../services/api';
 import { Card, Button } from '../components/ui';
 import { Theme } from '../constants/Theme';
+=======
+} from 'react-native';
+import { api } from '../services/api';
+import { Card, Button, StatusBadge } from '../components/ui';
+>>>>>>> Stashed changes
 
 interface Activity {
   id: number;
@@ -23,12 +29,15 @@ type ActivityType = 'Revenue' | 'Expense' | 'Neutral';
 
 const ACTIVITY_TYPES: ActivityType[] = ['Revenue', 'Expense', 'Neutral'];
 
+<<<<<<< Updated upstream
 const TYPE_STYLES: Record<ActivityType, { bg: string; border: string; text: string }> = {
   Revenue: { bg: Theme.successLight, border: Theme.success, text: Theme.success },
   Expense: { bg: Theme.errorLight, border: Theme.error, text: Theme.error },
   Neutral: { bg: Theme.gray100, border: Theme.gray300, text: Theme.gray700 },
 };
 
+=======
+>>>>>>> Stashed changes
 export default function ActivityScreen() {
   const [farmActivities, setFarmActivities] = useState<Activity[]>([]);
   const [description, setDescription] = useState('');
@@ -87,6 +96,7 @@ export default function ActivityScreen() {
     }
   };
 
+<<<<<<< Updated upstream
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -200,12 +210,121 @@ export default function ActivityScreen() {
                 {loading ? 'Submitting...' : 'Add Activity'}
               </Button>
             </View>
+=======
+  const typeColors: Record<ActivityType, string> = {
+    Revenue: 'bg-green-100 border-green-300',
+    Expense: 'bg-red-100 border-red-300',
+    Neutral: 'bg-gray-100 border-gray-300',
+  };
+
+  const typeTextColors: Record<ActivityType, string> = {
+    Revenue: 'text-green-700',
+    Expense: 'text-red-600',
+    Neutral: 'text-gray-700',
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <ScrollView className="flex-1" contentContainerClassName="px-4 py-4 pb-10">
+        <Text className="text-2xl font-bold text-gray-900 mb-1">Log Activity</Text>
+        <Text className="text-gray-400 text-sm mb-5">Record a new farm activity</Text>
+
+        <Card className="mb-4">
+          {/* Description */}
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Description</Text>
+          {fetching ? (
+            <ActivityIndicator size="small" color="#33b76d" className="my-2" />
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={() => setShowPicker(!showPicker)}
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 flex-row justify-between items-center mb-1"
+              >
+                <Text className={description ? 'text-gray-900 text-sm' : 'text-gray-400 text-sm'}>
+                  {description || 'Select or type a description'}
+                </Text>
+                <Text className="text-gray-400">▾</Text>
+              </TouchableOpacity>
+
+              {showPicker && (
+                <View className="border border-gray-100 rounded-xl bg-white mb-2 max-h-40">
+                  <ScrollView nestedScrollEnabled>
+                    {farmActivities.map((act) => (
+                      <TouchableOpacity
+                        key={act.id}
+                        onPress={() => { setDescription(act.description); setShowPicker(false); }}
+                        className="px-4 py-3 border-b border-gray-50 flex-row items-center"
+                      >
+                        {description === act.description && (
+                          <Text className="text-primary mr-2 text-sm">✓</Text>
+                        )}
+                        <Text className="text-gray-700 text-sm">{act.description}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Or type a custom description..."
+                placeholderTextColor="#9ca3af"
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-gray-900 text-sm"
+              />
+            </>
+          )}
+
+          {/* Activity Type */}
+          <Text className="text-sm font-semibold text-gray-700 mt-4 mb-2">Activity Type</Text>
+          <View className="flex-row gap-2">
+            {ACTIVITY_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type}
+                onPress={() => setActivityType(type)}
+                className={`flex-1 py-2 rounded-xl border items-center ${activityType === type ? typeColors[type] : 'bg-white border-gray-200'}`}
+              >
+                <Text className={`text-sm font-semibold ${activityType === type ? typeTextColors[type] : 'text-gray-400'}`}>
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Amount */}
+          <Text className="text-sm font-semibold text-gray-700 mt-4 mb-1">Amount</Text>
+          <TextInput
+            value={amount}
+            onChangeText={setAmount}
+            placeholder="0.00"
+            placeholderTextColor="#9ca3af"
+            keyboardType="numeric"
+            className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-gray-900 text-sm"
+          />
+
+          {/* Activity Date */}
+          <Text className="text-sm font-semibold text-gray-700 mt-4 mb-1">Activity Date</Text>
+          <TextInput
+            value={activityDate}
+            onChangeText={setActivityDate}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#9ca3af"
+            className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-gray-900 text-sm"
+          />
+
+          {/* Submit */}
+          <View className="mt-5">
+            <Button onPress={handleSubmit} loading={loading}>
+              {loading ? 'Submitting...' : 'Add Activity'}
+            </Button>
+>>>>>>> Stashed changes
           </View>
         </Card>
       </ScrollView>
     </SafeAreaView>
   );
 }
+<<<<<<< Updated upstream
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -321,3 +440,5 @@ const styles = StyleSheet.create({
     color: Theme.gray400,
   },
 });
+=======
+>>>>>>> Stashed changes

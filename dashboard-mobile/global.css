@@ -1,1 +1,7 @@
+<<<<<<< Updated upstream
 /* Styles handled by React Native StyleSheet */
+=======
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+>>>>>>> Stashed changes

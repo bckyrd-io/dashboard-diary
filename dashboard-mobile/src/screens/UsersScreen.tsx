@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+<<<<<<< Updated upstream
 import {
   ActivityIndicator,
   FlatList,
@@ -8,10 +9,14 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+=======
+import { ActivityIndicator, FlatList, RefreshControl, SafeAreaView, Text, View } from 'react-native';
+>>>>>>> Stashed changes
 import { useNavigation } from '@react-navigation/native';
 import { Mail, UserPlus, Users as UsersIcon } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Badge, Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
+<<<<<<< Updated upstream
 import { Theme } from '../constants/Theme';
 
 interface User {
@@ -21,6 +26,10 @@ interface User {
   role: string;
   createdAt: string;
 }
+=======
+
+interface User { id: number; username: string; email: string; role: string; createdAt: string; }
+>>>>>>> Stashed changes
 
 export default function UsersScreen() {
   const navigation = useNavigation();
@@ -44,6 +53,7 @@ export default function UsersScreen() {
 
   useEffect(() => { fetchUsers(); }, []);
 
+<<<<<<< Updated upstream
   if (loading) {
     return (
       <View style={s.loadingContainer}>
@@ -66,10 +76,18 @@ export default function UsersScreen() {
           </Button>
         }
       />
+=======
+  if (loading) return <View className="flex-1 items-center justify-center bg-gray-50"><ActivityIndicator color="#33b76d" /></View>;
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <ScreenHeader title="User Management" description={`${users.length} team members`} action={<Button className="px-3" onPress={() => navigation.navigate('AddUser' as never)}><UserPlus size={16} color="#fff" /><Text className="text-white font-semibold ml-1">Add</Text></Button>} />
+>>>>>>> Stashed changes
       {error ? <ErrorState message={error} /> : null}
       <FlatList
         data={users}
         keyExtractor={(item) => String(item.id)}
+<<<<<<< Updated upstream
         contentContainerStyle={s.listContent}
         refreshControl={
           <RefreshControl
@@ -92,6 +110,16 @@ export default function UsersScreen() {
                   <Text style={s.emailText}>{item.email}</Text>
                 </View>
               </View>
+=======
+        contentContainerClassName="px-4 pb-10"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchUsers(); }} tintColor="#33b76d" />}
+        ListEmptyComponent={<EmptyState icon={UsersIcon} message="No users found" />}
+        renderItem={({ item }) => (
+          <Card className="mb-3">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"><Text className="text-gray-700 font-bold">{item.username.charAt(0).toUpperCase()}</Text></View>
+              <View className="flex-1 ml-3"><Text className="font-semibold text-gray-950">{item.username}</Text><View className="flex-row items-center mt-1"><Mail size={13} color="#6b7280" /><Text className="text-gray-500 text-xs ml-1">{item.email}</Text></View></View>
+>>>>>>> Stashed changes
               <Badge label={item.role} variant="outline" />
             </View>
           </Card>
@@ -100,6 +128,7 @@ export default function UsersScreen() {
     </SafeAreaView>
   );
 }
+<<<<<<< Updated upstream
 
 const s = StyleSheet.create({
   safeArea: {
@@ -163,3 +192,5 @@ const s = StyleSheet.create({
     marginLeft: 4,
   },
 });
+=======
+>>>>>>> Stashed changes

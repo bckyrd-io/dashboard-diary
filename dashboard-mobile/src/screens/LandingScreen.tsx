@@ -1,15 +1,27 @@
+<<<<<<< Updated upstream
 import React from 'react';
+=======
+import React, { useState } from 'react';
+>>>>>>> Stashed changes
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+<<<<<<< Updated upstream
   SafeAreaView,
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HelpCircle, Notebook } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
+=======
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { HelpCircle, Notebook } from 'lucide-react-native';
+>>>>>>> Stashed changes
 
 export default function LandingScreen() {
   const navigation = useNavigation();
@@ -19,6 +31,11 @@ export default function LandingScreen() {
   };
 
   const scrollToHelp = () => {
+<<<<<<< Updated upstream
+=======
+    // In a real implementation, we would scroll to the help section
+    // For now, we'll just show an alert
+>>>>>>> Stashed changes
     alert('Help section is below!');
   };
 
@@ -26,11 +43,16 @@ export default function LandingScreen() {
     <View style={styles.featureCard}>
       <Text style={styles.featureIcon}>{icon}</Text>
       <Text style={styles.featureTitle}>{title}</Text>
+<<<<<<< Updated upstream
       <Text style={styles.featureDesc}>{description}</Text>
+=======
+      <Text style={styles.featureDescription}>{description}</Text>
+>>>>>>> Stashed changes
     </View>
   );
 
   return (
+<<<<<<< Updated upstream
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.heroSection}>
@@ -58,10 +80,41 @@ export default function LandingScreen() {
             >
               <HelpCircle size={20} color={Theme.primary} />
               <Text style={styles.helpText}>Help</Text>
+=======
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>🌱</Text>
+            <Text style={styles.logoLabel}>Diary Dashboard</Text>
+          </View>
+
+          <Text style={styles.description}>
+            The Farm Management System helps farm admins manage users, schedule activities, track performance, and analyze financial data, while staff can log activities, view schedules, and request inventory.
+          </Text>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleGetStarted}
+            >
+              <Notebook size={20} color="#fff" />
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={scrollToHelp}
+            >
+              <HelpCircle size={20} color="#33b76d" />
+              <Text style={styles.secondaryButtonText}>Help</Text>
+>>>>>>> Stashed changes
             </TouchableOpacity>
           </View>
         </View>
 
+<<<<<<< Updated upstream
         <View style={styles.guideSection}>
           <Text style={styles.guideTitle}>User Guide</Text>
           <Text style={styles.guideDesc}>
@@ -71,6 +124,19 @@ export default function LandingScreen() {
           <View style={styles.featuresBlock}>
             <Text style={styles.sectionTitle}>Admin Features</Text>
             <Text style={styles.sectionDesc}>
+=======
+        {/* Help Section */}
+        <View style={styles.helpSection}>
+          <Text style={styles.sectionTitle}>User Guide</Text>
+          <Text style={styles.sectionDescription}>
+            This guide provides an overview of system functionalities, installation steps, and user roles.
+          </Text>
+
+          {/* Admin Features */}
+          <View style={styles.featureSection}>
+            <Text style={styles.subsectionTitle}>Admin Features</Text>
+            <Text style={styles.subsectionDescription}>
+>>>>>>> Stashed changes
               Farm administrators have full access to manage the entire system, including users, activities, finances, and reporting.
             </Text>
 
@@ -101,9 +167,16 @@ export default function LandingScreen() {
             )}
           </View>
 
+<<<<<<< Updated upstream
           <View style={styles.featuresBlock}>
             <Text style={styles.sectionTitle}>Staff Features</Text>
             <Text style={styles.sectionDesc}>
+=======
+          {/* Staff Features */}
+          <View style={styles.featureSection}>
+            <Text style={styles.subsectionTitle}>Staff Features</Text>
+            <Text style={styles.subsectionDescription}>
+>>>>>>> Stashed changes
               Farm staff members have focused access to tools for daily activities, viewing schedules, and managing basic operational needs.
             </Text>
 
@@ -130,9 +203,15 @@ export default function LandingScreen() {
 }
 
 const styles = StyleSheet.create({
+<<<<<<< Updated upstream
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
+=======
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+>>>>>>> Stashed changes
   },
   scrollContent: {
     padding: 20,
@@ -141,11 +220,16 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 40,
   },
+<<<<<<< Updated upstream
   heroRow: {
+=======
+  logoContainer: {
+>>>>>>> Stashed changes
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
   },
+<<<<<<< Updated upstream
   heroEmoji: {
     fontSize: 36,
     marginRight: 12,
@@ -166,34 +250,76 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   getStartedBtn: {
+=======
+  logoText: {
+    fontSize: 40,
+    marginRight: 12,
+  },
+  logoLabel: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#33b76d',
+  },
+  description: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  primaryButton: {
+>>>>>>> Stashed changes
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+<<<<<<< Updated upstream
     backgroundColor: Theme.primary,
+=======
+    backgroundColor: '#33b76d',
+>>>>>>> Stashed changes
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 8,
     gap: 8,
   },
+<<<<<<< Updated upstream
   getStartedText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
   helpBtn: {
+=======
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+>>>>>>> Stashed changes
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+<<<<<<< Updated upstream
     backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: Theme.primary,
+=======
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#33b76d',
+>>>>>>> Stashed changes
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
     gap: 8,
   },
+<<<<<<< Updated upstream
   helpText: {
     color: Theme.primary,
     fontSize: 16,
@@ -239,12 +365,60 @@ const styles = StyleSheet.create({
   },
   featureIcon: {
     fontSize: 28,
+=======
+  secondaryButtonText: {
+    color: '#33b76d',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  helpSection: {
+    paddingBottom: 40,
+  },
+  sectionTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#111827',
+  },
+  sectionDescription: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  featureSection: {
+    marginBottom: 32,
+  },
+  subsectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#33b76d',
+  },
+  subsectionDescription: {
+    fontSize: 15,
+    color: '#4b5563',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  featureCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  featureIcon: {
+    fontSize: 32,
+>>>>>>> Stashed changes
     marginBottom: 12,
   },
   featureTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 8,
+<<<<<<< Updated upstream
     color: Theme.primary,
   },
   featureDesc: {
@@ -253,3 +427,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+=======
+    color: '#33b76d',
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
+  },
+});
+>>>>>>> Stashed changes

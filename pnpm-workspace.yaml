@@ -1,5 +1,12 @@
 allowBuilds:
+<<<<<<< Updated upstream
   bufferutil: false
   core-js: false
   esbuild: false
   sharp: false
+=======
+  bufferutil: true
+  core-js: true
+  esbuild: true
+  sharp: true
+>>>>>>> Stashed changes

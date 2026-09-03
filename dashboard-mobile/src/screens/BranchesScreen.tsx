@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+<<<<<<< Updated upstream
 import {
   ActivityIndicator,
   FlatList,
@@ -8,10 +9,14 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+=======
+import { ActivityIndicator, FlatList, RefreshControl, SafeAreaView, Text, View } from 'react-native';
+>>>>>>> Stashed changes
 import { useNavigation } from '@react-navigation/native';
 import { MapPin, Plus, Sprout } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
+<<<<<<< Updated upstream
 import { Theme } from '../constants/Theme';
 
 interface Branch {
@@ -20,6 +25,10 @@ interface Branch {
   location: string;
   userCount: number;
 }
+=======
+
+interface Branch { id: number; name: string; location: string; userCount: number; }
+>>>>>>> Stashed changes
 
 export default function BranchesScreen() {
   const navigation = useNavigation();
@@ -43,6 +52,7 @@ export default function BranchesScreen() {
 
   useEffect(() => { fetchBranches(); }, []);
 
+<<<<<<< Updated upstream
   if (loading) {
     return (
       <View style={s.loadingContainer}>
@@ -65,10 +75,18 @@ export default function BranchesScreen() {
           </Button>
         }
       />
+=======
+  if (loading) return <View className="flex-1 items-center justify-center bg-gray-50"><ActivityIndicator color="#33b76d" /></View>;
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <ScreenHeader title="Branches" description={`${branches.length} farm locations`} action={<Button className="px-3" onPress={() => navigation.navigate('AddBranch' as never)}><Plus size={16} color="#fff" /><Text className="text-white font-semibold ml-1">New</Text></Button>} />
+>>>>>>> Stashed changes
       {error ? <ErrorState message={error} /> : null}
       <FlatList
         data={branches}
         keyExtractor={(item) => String(item.id)}
+<<<<<<< Updated upstream
         contentContainerStyle={s.listContent}
         refreshControl={
           <RefreshControl
@@ -89,6 +107,17 @@ export default function BranchesScreen() {
                 <Text style={s.branchLocation}>{item.location}</Text>
               </View>
               <Text style={s.staffCount}>{item.userCount} staff</Text>
+=======
+        contentContainerClassName="px-4 pb-10"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBranches(); }} tintColor="#33b76d" />}
+        ListEmptyComponent={<EmptyState icon={Sprout} message="No branches available" />}
+        renderItem={({ item }) => (
+          <Card className="mb-3">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 rounded-md bg-green-50 items-center justify-center"><MapPin size={19} color="#33b76d" /></View>
+              <View className="flex-1 ml-3"><Text className="font-semibold text-gray-950 text-base">{item.name}</Text><Text className="text-gray-500 text-sm mt-1">{item.location}</Text></View>
+              <Text className="text-gray-500 text-xs">{item.userCount} staff</Text>
+>>>>>>> Stashed changes
             </View>
           </Card>
         )}
@@ -96,6 +125,7 @@ export default function BranchesScreen() {
     </SafeAreaView>
   );
 }
+<<<<<<< Updated upstream
 
 const s = StyleSheet.create({
   safeArea: {
@@ -155,3 +185,5 @@ const s = StyleSheet.create({
     fontSize: 12,
   },
 });
+=======
+>>>>>>> Stashed changes

@@ -7,15 +7,19 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     const { name, location } = await req.json();
 
+    if (!name || !location) {
+        return NextResponse.json({ success: false, message: 'Name and location are required' }, { status: 400 });
+    }
+
     try {
-        await db.insert(branchesTable).values({
+        const [newBranch] = await db.insert(branchesTable).values({
             name,
             location,
-        });
+        }).returning();
 
-        return NextResponse.json({ success: true, message: 'Branch created successfully' });
+        return NextResponse.json({ success: true, message: 'Branch created successfully', branch: newBranch });
     } catch (error: unknown) {
-        if (error instanceof Error && error.message.includes('unique constraint')) {
+        if (error instanceof Error && (error.message.includes('unique') || error.message.includes('duplicate'))) {
             return NextResponse.json({ success: false, message: 'Branch name already exists' }, { status: 409 });
         }
         return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
@@ -25,17 +29,16 @@ export async function POST(req: Request) {
 // Get All Branches with Additional Metrics (like user count)
 export async function GET() {
     try {
-        // Query to fetch branches and user count for each branch
         const branchesWithUserCount = await db
             .select({
                 id: branchesTable.id,
                 name: branchesTable.name,
                 location: branchesTable.location,
-                userCount: sql<number>`count(${usersTable.id})`.as('userCount') // Counting users for each branch
+                userCount: sql<number>`count(${usersTable.id})::int`.as('userCount')
             })
             .from(branchesTable)
-            .leftJoin(usersTable, eq(usersTable.branchId, branchesTable.id)) // Left join ensures all branches are included
-            .groupBy(branchesTable.id); // Group by branch ID to get one row per branch
+            .leftJoin(usersTable, eq(usersTable.branchId, branchesTable.id))
+            .groupBy(branchesTable.id, branchesTable.name, branchesTable.location);
 
         return NextResponse.json({ success: true, branches: branchesWithUserCount });
     } catch (error: unknown) {
@@ -49,13 +52,18 @@ export async function PATCH(req: Request) {
     const { id, name, location } = await req.json();
 
     try {
-        await db.update(branchesTable)
-            .set({ name, location })
-            .where(eq(branchesTable.id, id));
+        const updatedBranch = await db.update(branchesTable)
+            .set({ name, location, updatedAt: new Date() })
+            .where(eq(branchesTable.id, Number(id)))
+            .returning();
 
-        return NextResponse.json({ success: true, message: 'Branch updated successfully' });
+        if (!updatedBranch || updatedBranch.length === 0) {
+            return NextResponse.json({ success: false, message: 'Branch not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, message: 'Branch updated successfully', branch: updatedBranch[0] });
     } catch (error: unknown) {
-        if (error instanceof Error && error.message.includes('unique constraint')) {
+        if (error instanceof Error && (error.message.includes('unique') || error.message.includes('duplicate'))) {
             return NextResponse.json({ success: false, message: 'Branch name already exists' }, { status: 409 });
         }
         return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
@@ -68,7 +76,12 @@ export async function DELETE(req: Request) {
 
     try {
         const deletedBranch = await db.delete(branchesTable)
-            .where(eq(branchesTable.id, id));
+            .where(eq(branchesTable.id, Number(id)))
+            .returning();
+
+        if (!deletedBranch || deletedBranch.length === 0) {
+            return NextResponse.json({ success: false, message: 'Branch not found' }, { status: 404 });
+        }
 
         return NextResponse.json({ success: true, message: 'Branch deleted successfully' });
     } catch (error: unknown) {
@@ -77,4 +90,4 @@ export async function DELETE(req: Request) {
     }
 }
 
-export const dynamic = 'force-dynamic'; // Optional: Enable dynamic behavior if needed
+export const dynamic = 'force-dynamic';
