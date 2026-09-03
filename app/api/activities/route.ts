@@ -14,8 +14,7 @@ export async function POST(req: Request) {
         activityType,
         amount,
         activityDate,
-      }).$returningId(); 
-      //    ^? { id: number }[]
+      }).returning();
   
       // If activityDate is in the future, create a schedule
       if (new Date(activityDate) > new Date()) {
