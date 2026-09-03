@@ -1,9 +1,5 @@
-<<<<<<< Updated upstream
-import { integer, pgTable, serial, text, timestamp, date } from 'drizzle-orm/pg-core';
-=======
 import { integer, pgTable, serial, text, varchar, timestamp, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
->>>>>>> Stashed changes
 
 // Branches Table
 export const branchesTable = pgTable('branches', {
@@ -44,13 +40,8 @@ export const usersTable = pgTable('users', {
 // Activities Table
 export const activitiesTable = pgTable('activities', {
   id: serial('id').primaryKey(),
-<<<<<<< Updated upstream
-  description: text('description').notNull(),
-  activityType: text('activity_type').notNull(),
-=======
   description: varchar('description', { length: 255 }).notNull(),
   activityType: varchar('activity_type', { length: 255 }).notNull(), // Revenue, Expense, Neutral
->>>>>>> Stashed changes
   amount: integer('amount').notNull().default(0),
   activityDate: date('activity_date').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),

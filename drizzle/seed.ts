@@ -1,3 +1,6 @@
+// pg is loaded at runtime by the seed script; this file may be type-checked
+// without the optional pg type package installed.
+// @ts-expect-error pg may not provide declarations in the seed-only environment.
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { config } from 'dotenv';

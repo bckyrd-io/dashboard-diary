@@ -1,17 +1,15 @@
-<<<<<<< Updated upstream
-import { sql } from '@vercel/postgres';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { config } from 'dotenv';
-import * as schema from './schema';
-
-config({ path: '.env' });
-
-export const db = drizzle(sql, { schema });
-=======
-import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { config } from 'dotenv';
 import * as schema from './schema';
+
+// Load pg at runtime without requiring its type declarations during compilation.
+const pg = require('pg') as {
+  Pool: new (options: {
+    connectionString: string;
+    ssl?: { rejectUnauthorized: boolean };
+  }) => any;
+};
+const { Pool } = pg;
 
 // Load environment variables
 config({ path: '.env.development.local' });
@@ -25,7 +23,7 @@ const connectionString =
 
 // Prevent multiple pool instances during Next.js hot reloading
 const globalForDb = globalThis as unknown as {
-  pgPool: Pool | undefined;
+  pgPool: InstanceType<typeof Pool> | undefined;
 };
 
 export const pool =
@@ -46,4 +44,3 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Initialize Drizzle ORM with the PostgreSQL connection pool and schema
 export const db = drizzle(pool, { schema });
->>>>>>> Stashed changes
