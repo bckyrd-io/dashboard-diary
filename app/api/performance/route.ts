@@ -1,16 +1,14 @@
 import { db } from "../../../drizzle/db";
-import { performanceTable, activitiesTable, usersTable, branchesTable } from "../../../drizzle/db/schema";
+import { performanceTable, eventsTable, usersTable, branchesTable } from "../../../drizzle/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-// Fetch all performances or specific user's performances
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
         const userId = url.searchParams.get("userId");
 
         if (userId) {
-            // Fetch specific user's performance where role is 'Staff'
             const performances = await db
                 .select({
                     id: performanceTable.id,
@@ -18,14 +16,14 @@ export async function GET(req: Request) {
                     username: usersTable.username,
                     branch_name: branchesTable.name,
                     role: usersTable.role,
-                    activity: activitiesTable.description,
+                    activity: eventsTable.description,
                     status: performanceTable.status,
                     updatedAt: performanceTable.updatedAt,
                 })
                 .from(usersTable)
                 .leftJoin(performanceTable, eq(usersTable.id, performanceTable.userId))
                 .leftJoin(branchesTable, eq(usersTable.branchId, branchesTable.id))
-                .leftJoin(activitiesTable, eq(performanceTable.activityId, activitiesTable.id))
+                .leftJoin(eventsTable, eq(performanceTable.activityId, eventsTable.id))
                 .where(
                     and(
                         eq(usersTable.id, Number(userId)),
@@ -37,7 +35,6 @@ export async function GET(req: Request) {
                 status: 200,
             });
         } else {
-            // Fetch all performances where role is 'Staff', including unassigned staff
             const performances = await db
                 .select({
                     id: performanceTable.id,
@@ -45,14 +42,14 @@ export async function GET(req: Request) {
                     username: usersTable.username,
                     branch_name: branchesTable.name,
                     role: usersTable.role,
-                    activity: activitiesTable.description,
+                    activity: eventsTable.description,
                     status: performanceTable.status,
                     updatedAt: performanceTable.updatedAt,
                 })
                 .from(usersTable)
                 .leftJoin(performanceTable, eq(usersTable.id, performanceTable.userId))
                 .leftJoin(branchesTable, eq(usersTable.branchId, branchesTable.id))
-                .leftJoin(activitiesTable, eq(performanceTable.activityId, activitiesTable.id))
+                .leftJoin(eventsTable, eq(performanceTable.activityId, eventsTable.id))
                 .where(eq(usersTable.role, "Staff"));
 
             return NextResponse.json({ success: true, performance: performances }, {
@@ -67,7 +64,6 @@ export async function GET(req: Request) {
     }
 }
 
-// Create a new performance entry
 export async function POST(req: Request) {
     try {
         const body = await req.json();

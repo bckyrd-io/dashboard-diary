@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { HelpCircle, Notebook } from 'lucide-react-native';
+import { HelpCircle, ShoppingBag } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
 
 export default function LandingScreen() {
@@ -36,19 +36,19 @@ export default function LandingScreen() {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>🌱</Text>
-            <Text style={styles.logoLabel}>Diary Dashboard</Text>
+            <Text style={styles.logoText}>👟</Text>
+            <Text style={styles.logoLabel}>The Sneaker Lounge</Text>
           </View>
 
           <Text style={styles.description}>
-            The Farm Management System helps farm admins manage users, schedule
-            activities, track performance, and analyze financial data, while staff
-            can log activities, view schedules, and request inventory.
+            The Sneaker Lounge Management System helps store admins manage users,
+            process sales, track inventory, and analyze performance, while staff
+            can process checkouts, view schedules, and manage stock.
           </Text>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
-              <Notebook size={20} color="#fff" />
+              <ShoppingBag size={20} color="#fff" />
               <Text style={styles.primaryButtonText}>Get Started</Text>
             </TouchableOpacity>
 
@@ -71,26 +71,26 @@ export default function LandingScreen() {
           <View style={styles.featureSection}>
             <Text style={styles.subsectionTitle}>Admin Features</Text>
             <Text style={styles.subsectionDescription}>
-              Farm administrators have full access to manage the entire system,
-              including users, activities, finances, and reporting.
+              Store administrators have full access to manage the entire system,
+              including users, inventory, finances, and reporting.
             </Text>
             {renderFeatureCard('User Management', 'Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.', '👷')}
+            {renderFeatureCard('Inventory Management', 'Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.', '👟')}
             {renderFeatureCard('Financial Analytics', 'Record revenue and expenses. Generate profit reports and financial analyses with visual charts.', '📈')}
             {renderFeatureCard('Schedule Management', 'Create and assign work schedules to staff members. Set recurring activities and manage calendar events.', '📅')}
             {renderFeatureCard('Staff Performance', 'Monitor productivity metrics and generate performance reports for individual staff members.', '📊')}
-            {renderFeatureCard('Generate Report', 'Generate comprehensive reports on farm operations, finances, and staff performance with export options.', '📋')}
           </View>
 
           {/* Staff Features */}
           <View style={styles.featureSection}>
             <Text style={styles.subsectionTitle}>Staff Features</Text>
             <Text style={styles.subsectionDescription}>
-              Farm staff members have focused access to tools for daily activities,
-              viewing schedules, and managing basic operational needs.
+              Store staff members have focused access to tools for daily operations,
+              processing sales, and managing inventory.
             </Text>
-            {renderFeatureCard('Activity Logging', 'Record daily activities with details on time spent, resources used, and outcomes achieved.', '🌾')}
-            {renderFeatureCard('Resource Requests', 'Submit requests for required supplies, tools, and equipment with detailed justifications.', '📦')}
-            {renderFeatureCard('Notification Center', 'Receive updates on schedule changes, request approvals, and system announcements in real-time.', '🔔')}
+            {renderFeatureCard('Checkout Processing', 'Process customer sales with multiple payment methods including mobile money.', '💳')}
+            {renderFeatureCard('Stock Management', 'View inventory levels, process stock transfers, and receive new shipments.', '📦')}
+            {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', '🔔')}
           </View>
         </View>
       </ScrollView>
@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: Theme.primary, paddingVertical: 14, paddingHorizontal: 20,
-    borderRadius: 8, gap: 8,
+    borderRadius: Theme.radius, gap: 8,
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   secondaryButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: Theme.background, borderWidth: 2, borderColor: Theme.primary,
-    paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, gap: 8,
+    paddingVertical: 12, paddingHorizontal: 20, borderRadius: Theme.radius, gap: 8,
   },
   secondaryButtonText: { color: Theme.primary, fontSize: 16, fontWeight: '600' },
   helpSection: { paddingBottom: 40 },
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   subsectionTitle: { fontSize: 20, fontWeight: '600', marginBottom: 12, color: Theme.primary },
   subsectionDescription: { fontSize: 15, color: '#4b5563', lineHeight: 22, marginBottom: 20 },
   featureCard: {
-    backgroundColor: Theme.muted, borderRadius: 12, padding: 16,
+    backgroundColor: Theme.muted, borderRadius: Theme.radius, padding: 16,
     marginBottom: 16, borderWidth: 1, borderColor: Theme.border,
   },
   featureIcon: { fontSize: 32, marginBottom: 12 },

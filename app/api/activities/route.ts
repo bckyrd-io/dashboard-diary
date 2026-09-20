@@ -1,5 +1,5 @@
 import { db } from '../../../drizzle/db';
-import { activitiesTable, schedulesTable } from '../../../drizzle/db/schema';
+import { eventsTable, schedulesTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
@@ -7,18 +7,17 @@ export async function POST(req: Request) {
   const { description, activityType, amount, activityDate } = await req.json();
 
   try {
-    // Insert the activity
     const newActivity = await db
-      .insert(activitiesTable)
+      .insert(eventsTable)
       .values({
         description,
-        activityType,
+        eventType: 'adjustment',
+        financialType: activityType || 'Neutral',
         amount: Number(amount),
-        activityDate,
+        date: activityDate,
       })
       .returning();
 
-    // If activityDate is in the future, create a schedule
     if (new Date(activityDate) > new Date()) {
       await db.insert(schedulesTable).values({
         activityId: newActivity[0].id,
@@ -34,10 +33,9 @@ export async function POST(req: Request) {
   }
 }
 
-// Get all activities
 export async function GET() {
   try {
-    const activities = await db.select().from(activitiesTable);
+    const activities = await db.select().from(eventsTable);
     return NextResponse.json({ success: true, activities });
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -45,15 +43,19 @@ export async function GET() {
   }
 }
 
-// Update an activity
 export async function PUT(req: Request) {
   const { id, description, activityType, amount, activityDate } = await req.json();
 
   try {
     const updatedActivity = await db
-      .update(activitiesTable)
-      .set({ description, activityType, amount: Number(amount), activityDate })
-      .where(eq(activitiesTable.id, Number(id)))
+      .update(eventsTable)
+      .set({
+        description,
+        financialType: activityType || 'Neutral',
+        amount: Number(amount),
+        date: activityDate,
+      })
+      .where(eq(eventsTable.id, Number(id)))
       .returning();
 
     if (!updatedActivity || updatedActivity.length === 0) {
@@ -67,14 +69,13 @@ export async function PUT(req: Request) {
   }
 }
 
-// Delete an activity
 export async function DELETE(req: Request) {
   const { id } = await req.json();
 
   try {
     const deletedCount = await db
-      .delete(activitiesTable)
-      .where(eq(activitiesTable.id, Number(id)))
+      .delete(eventsTable)
+      .where(eq(eventsTable.id, Number(id)))
       .returning();
 
     if (!deletedCount || deletedCount.length === 0) {

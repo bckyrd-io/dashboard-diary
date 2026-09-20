@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../drizzle/db';
 import {
-  activitiesTable,
-  activityResourcesTable,
+  eventsTable,
+  eventItemsTable,
+  itemsTable,
   branchesTable,
   performanceTable,
-  resourcesTable,
   schedulesTable,
   usersTable,
 } from '../../../drizzle/db/schema';
@@ -13,31 +13,28 @@ import { sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Fetch aggregated activity data grouped by activity_type
+    // Fetch aggregated activity data grouped by financial_type (Revenue/Expense/Neutral)
     const activitiesByType = await db
       .select({
-        activityType: activitiesTable.activityType,
-        totalAmount: sql<number>`COALESCE(SUM(${activitiesTable.amount})::int, 0)`,
-        revenueAmount: sql<number>`COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'revenue' THEN ${activitiesTable.amount} ELSE 0 END)::int, 0)`,
-        expenseAmount: sql<number>`COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'expense' THEN ${activitiesTable.amount} ELSE 0 END)::int, 0)`,
-        netProfit: sql<number>`(COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'revenue' THEN ${activitiesTable.amount} ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN LOWER(${activitiesTable.activityType}) = 'expense' THEN ${activitiesTable.amount} ELSE 0 END), 0))::int`,
-        activities: sql<string>`COALESCE(STRING_AGG(${activitiesTable.description}, ', '), '')`,
+        activityType: eventsTable.financialType,
+        totalAmount: sql<number>`COALESCE(SUM(${eventsTable.amount})::int, 0)`,
+        activities: sql<string>`COALESCE(STRING_AGG(${eventsTable.description}, ', '), '')`,
       })
-      .from(activitiesTable)
-      .where(sql`LOWER(${activitiesTable.activityType}) != 'neutral'`)
-      .groupBy(activitiesTable.activityType);
+      .from(eventsTable)
+      .where(sql`LOWER(${eventsTable.financialType}) != 'neutral'`)
+      .groupBy(eventsTable.financialType);
 
-    // Fetch detailed activity list grouped by activity ID
+    // Fetch detailed activity list
     const activitiesList = await db
       .select({
-        activityId: activitiesTable.id,
-        activityType: activitiesTable.activityType,
-        description: activitiesTable.description,
-        amount: activitiesTable.amount,
-        createdAt: activitiesTable.createdAt,
+        activityId: eventsTable.id,
+        activityType: eventsTable.financialType,
+        description: eventsTable.description,
+        amount: eventsTable.amount,
+        createdAt: eventsTable.createdAt,
         resourcesUsed: sql<string>`COALESCE(STRING_AGG(DISTINCT 
-            CASE WHEN ${resourcesTable.name} IS NOT NULL 
-                 THEN CONCAT(${resourcesTable.name}, ' (', ${activityResourcesTable.allocatedQuantity}, ' ', ${resourcesTable.unit}, ')') 
+            CASE WHEN ${itemsTable.name} IS NOT NULL 
+                 THEN CONCAT(${itemsTable.name}, ' (', ${eventItemsTable.quantity}, ' ', COALESCE(${itemsTable.unit}, 'units'), ')') 
             END, 
             ', '), '')`,
         assignedStaff: sql<string>`COALESCE(STRING_AGG(DISTINCT
@@ -56,19 +53,19 @@ export async function GET() {
             END, 
             ', '), '')`,
       })
-      .from(activitiesTable)
-      .leftJoin(activityResourcesTable, sql`${activityResourcesTable.activityId} = ${activitiesTable.id}`)
-      .leftJoin(resourcesTable, sql`${resourcesTable.id} = ${activityResourcesTable.resourceId}`)
-      .leftJoin(performanceTable, sql`${performanceTable.activityId} = ${activitiesTable.id}`)
+      .from(eventsTable)
+      .leftJoin(eventItemsTable, sql`${eventItemsTable.eventId} = ${eventsTable.id}`)
+      .leftJoin(itemsTable, sql`${itemsTable.id} = ${eventItemsTable.itemId}`)
+      .leftJoin(performanceTable, sql`${performanceTable.activityId} = ${eventsTable.id}`)
       .leftJoin(usersTable, sql`${usersTable.id} = ${performanceTable.userId}`)
       .leftJoin(branchesTable, sql`${branchesTable.id} = ${usersTable.branchId}`)
-      .leftJoin(schedulesTable, sql`${schedulesTable.activityId} = ${activitiesTable.id}`)
+      .leftJoin(schedulesTable, sql`${schedulesTable.activityId} = ${eventsTable.id}`)
       .groupBy(
-        activitiesTable.id,
-        activitiesTable.activityType,
-        activitiesTable.description,
-        activitiesTable.amount,
-        activitiesTable.createdAt
+        eventsTable.id,
+        eventsTable.financialType,
+        eventsTable.description,
+        eventsTable.amount,
+        eventsTable.createdAt
       );
 
     // Fetch notifications from the schedules table

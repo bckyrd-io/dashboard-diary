@@ -5,15 +5,14 @@ import {
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
-  Modal,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { api } from '../services/api';
-import { Card, Button, EmptyState, ScreenHeader } from '../components/ui';
+import { Card, EmptyState, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
+import { sendLocalNotification } from '../services/notifications';
 
 interface CalendarEvent {
   id: string;
@@ -31,7 +30,6 @@ export default function ScheduleScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [error, setError] = useState('');
 
@@ -51,7 +49,16 @@ export default function ScheduleScreen() {
       }
       const notifs = dashRes.notifications ?? [];
       setNotifications(notifs);
-      if (notifs.length > 0) setShowNotifications(true);
+
+      // Trigger local device notifications for new schedule alerts instead of a blocking modal
+      if (notifs.length > 0) {
+        const topNotif = notifs[0];
+        sendLocalNotification(
+          'Scheduled Reminder',
+          topNotif.notificationMessage,
+          { count: notifs.length }
+        );
+      }
       setError('');
     } catch (err: any) {
       setError(err.message ?? 'Failed to load schedule.');
@@ -108,38 +115,10 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Notifications modal */}
-      <Modal visible={showNotifications} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>📣 Scheduled Notifications</Text>
-            <ScrollView style={{ maxHeight: 256, marginBottom: 16 }}>
-              {notifications.map((n, i) => (
-                <View key={i} style={styles.notifRow}>
-                  <Text style={{ color: Theme.primary, marginRight: 8, marginTop: 2 }}>➞</Text>
-                  <Text style={styles.notifText}>{n.notificationMessage}</Text>
-                </View>
-              ))}
-            </ScrollView>
-            <Button onPress={() => setShowNotifications(false)}>Close</Button>
-          </View>
-        </View>
-      </Modal>
-
       <View style={{ paddingBottom: 4 }}>
         <ScreenHeader
           title="Schedule"
           description={`${events.length} upcoming events`}
-          action={
-            notifications.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => setShowNotifications(true)}
-                style={styles.notifBtn}
-              >
-                <Text style={styles.notifCount}>{notifications.length}</Text>
-              </TouchableOpacity>
-            ) : null
-          }
         />
       </View>
 
@@ -220,18 +199,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.muted },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
   loadingText: { color: Theme.mutedForeground, marginTop: 12 },
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', paddingHorizontal: 24,
-  },
-  modalCard: { backgroundColor: Theme.background, borderRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: Theme.foreground, marginBottom: 16 },
-  notifRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  notifText: { color: Theme.gray700, fontSize: 14, flex: 1 },
-  notifBtn: {
-    backgroundColor: Theme.warningLight, paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 8, borderWidth: 1, borderColor: '#fde68a',
-  },
-  notifCount: { color: '#92400e', fontSize: 13, fontWeight: '600' },
   eventsSection: { paddingHorizontal: 16, paddingTop: 16 },
   eventsTitle: { fontSize: 15, fontWeight: '600', color: Theme.gray700, marginBottom: 12 },
   eventCard: { marginBottom: 8 },

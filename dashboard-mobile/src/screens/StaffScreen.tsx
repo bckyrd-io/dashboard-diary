@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   staffName: { fontWeight: 'bold', color: Theme.foreground, fontSize: 15 },
   branchName: { color: Theme.primary, fontSize: 12, fontWeight: '500', marginTop: 2 },
   activityBox: {
-    backgroundColor: Theme.muted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginTop: 4,
+    backgroundColor: Theme.muted, borderRadius: Theme.radius, paddingHorizontal: 12, paddingVertical: 8, marginTop: 4,
   },
   activityText: { color: Theme.gray600, fontSize: 14 },
   dateText: { color: Theme.mutedForeground, fontSize: 12, marginTop: 8, textAlign: 'right' },

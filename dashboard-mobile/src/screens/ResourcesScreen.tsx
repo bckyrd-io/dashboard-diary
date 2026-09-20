@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
   loadingText: { color: Theme.mutedForeground, marginTop: 12 },
   searchInput: {
-    borderWidth: 1, borderColor: Theme.border, borderRadius: 12,
+    borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius,
     paddingHorizontal: 16, paddingVertical: 12, backgroundColor: Theme.background,
     color: Theme.foreground, fontSize: 14, marginBottom: 16,
   },

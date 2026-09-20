@@ -47,9 +47,9 @@ export default function LoginScreen() {
           {/* Logo / Brand */}
           <View style={styles.logoSection}>
             <View style={styles.logoBox}>
-              <Text style={styles.logoEmoji}>🌾</Text>
+              <Text style={styles.logoEmoji}>👟</Text>
             </View>
-            <Text style={styles.appName}>Farm Diary</Text>
+            <Text style={styles.appName}>The Sneaker Lounge</Text>
             <Text style={styles.subtitle}>Sign in to your account</Text>
           </View>
 
@@ -102,7 +102,7 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.footer}>
-            Farm Diary Management System
+            The Sneaker Lounge - Home of Shoes and Other Accessories
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -117,25 +117,24 @@ const styles = StyleSheet.create({
   logoSection: { alignItems: 'center', marginBottom: 40 },
   logoBox: {
     width: 80, height: 80, backgroundColor: Theme.primary,
-    borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+    borderRadius: Theme.radius, alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   logoEmoji: { fontSize: 36, color: '#fff' },
   appName: { fontSize: 28, fontWeight: 'bold', color: Theme.foreground },
   subtitle: { color: Theme.mutedForeground, marginTop: 4, fontSize: 15 },
   card: {
-    backgroundColor: Theme.background, borderRadius: 24,
+    backgroundColor: Theme.background, borderRadius: Theme.radius,
     borderWidth: 1, borderColor: Theme.border, padding: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    ...Theme.shadowSm,
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
   input: {
-    borderWidth: 1, borderColor: Theme.border, borderRadius: 12,
+    borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius,
     paddingHorizontal: 16, paddingVertical: 14, backgroundColor: Theme.muted,
     color: Theme.foreground, fontSize: 15, marginBottom: 16,
   },
   passwordRow: {
-    borderWidth: 1, borderColor: Theme.border, borderRadius: 12,
+    borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius,
     backgroundColor: Theme.muted, flexDirection: 'row', alignItems: 'center', marginBottom: 16,
   },
   passwordInput: {
@@ -147,7 +146,7 @@ const styles = StyleSheet.create({
   errorText: { color: Theme.destructive, fontSize: 13, marginBottom: 12, textAlign: 'center' },
   submitBtn: {
     backgroundColor: Theme.primary, paddingVertical: 16,
-    borderRadius: 12, alignItems: 'center',
+    borderRadius: Theme.radius, alignItems: 'center',
   },
   submitText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   footer: { textAlign: 'center', color: Theme.mutedForeground, fontSize: 12, marginTop: 24 },

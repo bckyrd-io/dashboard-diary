@@ -1,25 +1,23 @@
 import { db } from '../../../drizzle/db';
-import { schedulesTable, activitiesTable } from '../../../drizzle/db/schema';
+import { schedulesTable, eventsTable } from '../../../drizzle/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        // Fetch schedules with their related activity descriptions using a join
         const schedules = await db
             .select({
                 scheduleId: schedulesTable.id,
                 scheduledDate: schedulesTable.scheduledDate,
-                activityDescription: activitiesTable.description,
+                activityDescription: eventsTable.description,
             })
             .from(schedulesTable)
-            .leftJoin(activitiesTable, eq(activitiesTable.id, schedulesTable.activityId));
+            .leftJoin(eventsTable, eq(eventsTable.id, schedulesTable.activityId));
 
-        // Validate and format the response to match FullCalendar's expected structure
         const events = schedules.map((schedule) => ({
-            id: schedule.scheduleId?.toString() ?? '', // Ensure id is a string
-            title: schedule.activityDescription ?? 'Untitled Activity', // Provide a default title
-            start: schedule.scheduledDate ? new Date(schedule.scheduledDate).toISOString() : '', // Ensure ISO string format
+            id: schedule.scheduleId?.toString() ?? '',
+            title: schedule.activityDescription ?? 'Untitled Activity',
+            start: schedule.scheduledDate ? new Date(schedule.scheduledDate).toISOString() : '',
         }));
 
         return NextResponse.json({ 

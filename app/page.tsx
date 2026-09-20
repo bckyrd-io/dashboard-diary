@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ArrowRight, HelpCircleIcon, LogInIcon, ClipboardCopy, NotebookIcon } from "lucide-react";
+import { ChevronRight, ArrowRight, HelpCircleIcon, LogInIcon, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -14,33 +14,13 @@ export default function LandingPage() {
 
     const handleLogin = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.preventDefault();
-        router.push("/farm/");
+        router.push("/farm");
     };
 
     const scrollToFeatures = () => {
         const element = document.getElementById("features");
         element?.scrollIntoView({ behavior: "smooth" });
     };
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopiedCommand(text);
-        setTimeout(() => setCopiedCommand(""), 2000);
-    };
-
-    // Command component for consistent styling and copy functionality
-    const Command = ({ text }: { text: string }) => (
-        <div className="flex items-center bg-gray-100 rounded-md overflow-hidden">
-            <code className="p-2 text-primary font-mono">{text}</code>
-            <button
-                onClick={() => copyToClipboard(text)}
-                className="p-2 hover:bg-gray-200"
-                title="Copy to clipboard"
-            >
-                <ClipboardCopy size={16} className={copiedCommand === text ? "text-green-500" : "text-gray-500"} />
-            </button>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-white">
@@ -54,19 +34,19 @@ export default function LandingPage() {
                     >
                         <div className="space-y-4">
                             <div className="flex items-center space-x-2 mb-8">
-                                <img src="/logo.png" alt="EcoHarvest Logo" className="h-10" />
-                                <span className="text-xl font-bold text-primary">Diary Dashboard</span>
+                                <img src="/logo.png" alt="The Sneaker Lounge Logo" className="h-10" />
+                                <span className="text-xl font-bold text-primary">The Sneaker Lounge</span>
                             </div>
                         </div>
 
                         <p className="text-gray-600 text-lg max-w-2xl">
-                            The Farm Management System helps farm admins manage users, schedule activities, track performance, and analyze financial data, while staff can log activities, view schedules, and request inventory.
+                            The Sneaker Lounge Management System helps store admins manage users, process sales, track inventory, and analyze performance, while staff can process checkouts, view schedules, and manage stock.
                         </p>
 
                         <p className="flex space-x-4">
                             <Button onClick={handleLogin} variant={"default"}>
                                 Get Started
-                                <NotebookIcon size={20} className="ml-2" />
+                                <ShoppingBag size={20} className="ml-2" />
                             </Button>
                             <Button onClick={scrollToFeatures} variant="outline">
                                 Help
@@ -100,7 +80,7 @@ export default function LandingPage() {
                                 <div>
                                     <h4 className="text-xl font-medium mb-6">Admin Features</h4>
                                     <p className="text-gray-600 mb-8">
-                                        Farm administrators have full access to manage the entire system, including users, activities, finances, and reporting.
+                                        Store administrators have full access to manage the entire system, including users, inventory, finances, and reporting.
                                     </p>
 
                                     <div className="space-y-12">
@@ -122,7 +102,25 @@ export default function LandingPage() {
                                             </div>
                                         </div>
 
-                                        {/* Admin Feature 2: Financial Tracking */}
+                                        {/* Admin Feature 2: Inventory Management */}
+                                        <div className="space-y-4">
+                                            <h5 className="text-lg font-medium text-primary">Inventory Management</h5>
+                                            <p className="text-gray-600">
+                                                Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.
+                                            </p>
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <img
+                                                    src="home-analytics.jpg"
+                                                    alt="Inventory Management"
+                                                    className="w-full h-auto"
+                                                />
+                                                <div className="p-3 bg-gray-50">
+                                                    <p className="text-sm text-gray-500">Inventory dashboard showing shoe catalog with categories and stock levels</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Admin Feature 3: Financial Analytics */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Financial Analytics</h5>
                                             <p className="text-gray-600">
@@ -130,17 +128,17 @@ export default function LandingPage() {
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img
-                                                    src="home-analytics.jpg"
+                                                    src="/schedule-calendar.jpg"
                                                     alt="Financial Analytics"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
-                                                    <p className="text-sm text-gray-500">Financial dashboard with charts showing farm profit trends and expense breakdowns</p>
+                                                    <p className="text-sm text-gray-500">Financial dashboard with charts showing sales trends and expense breakdowns</p>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Admin Feature 3: Schedule Creation */}
+                                        {/* Admin Feature 4: Schedule Management */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Schedule Management</h5>
                                             <p className="text-gray-600">
@@ -148,7 +146,7 @@ export default function LandingPage() {
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img
-                                                    src="/schedule-calendar.jpg"
+                                                    src="/staff-performance.jpg"
                                                     alt="Schedule Management"
                                                     className="w-full h-auto"
                                                 />
@@ -158,7 +156,7 @@ export default function LandingPage() {
                                             </div>
                                         </div>
 
-                                        {/* Admin Feature 5: Performance Tracking */}
+                                        {/* Admin Feature 5: Staff Performance */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Staff Performance</h5>
                                             <p className="text-gray-600">
@@ -166,30 +164,12 @@ export default function LandingPage() {
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img
-                                                    src="/staff-performance.jpg"
+                                                    src="/generate-report.jpg"
                                                     alt="Performance Dashboard"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
-                                                    <p className="text-sm text-gray-500">Performance analytics showing productivity metrics across different staff members</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Admin Feature 6: Reporting */}
-                                        <div className="space-y-4">
-                                            <h5 className="text-lg font-medium text-primary">Generate Report</h5>
-                                            <p className="text-gray-600">
-                                                Generate comprehensive reports on farm operations, finances, and staff performance with export options.
-                                            </p>
-                                            <div className="border rounded-lg overflow-hidden">
-                                                <img
-                                                    src="/generate-report.jpg"
-                                                    alt="Advanced Reporting"
-                                                    className="w-full h-auto"
-                                                />
-                                                <div className="p-3 bg-gray-50">
-                                                    <p className="text-sm text-gray-500">Report generation interface with customizable parameters and export formats</p>
+                                                    <p className="text-sm text-gray-500">Performance analytics showing sales metrics across different staff members</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -201,53 +181,51 @@ export default function LandingPage() {
                                 <div>
                                     <h4 className="text-xl font-medium mb-6">Staff Features</h4>
                                     <p className="text-gray-600 mb-8">
-                                        Farm staff members have focused access to tools for daily activities, viewing schedules, and managing basic operational needs.
+                                        Store staff members have focused access to tools for daily operations, processing sales, and managing inventory.
                                     </p>
 
                                     <div className="space-y-12">
-                                        {/* Staff Feature 1: Activity Logging */}
+                                        {/* Staff Feature 1: Checkout Processing */}
                                         <div className="space-y-4">
-                                            <h5 className="text-lg font-medium text-primary">Activity Logging</h5>
+                                            <h5 className="text-lg font-medium text-primary">Checkout Processing</h5>
                                             <p className="text-gray-600">
-                                                Record daily activities with details on time spent, resources used, and outcomes achieved.
+                                                Process customer sales with multiple payment methods including mobile money.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img
                                                     src="/create-activity.jpg"
-                                                    alt="Activity Logging"
+                                                    alt="Checkout Processing"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
-                                                    <p className="text-sm text-gray-500">Activity logging form with fields for recording task details and outcomes</p>
+                                                    <p className="text-sm text-gray-500">Checkout interface with cart management and payment method selection</p>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Staff Feature 3: Inventory Requests */}
+                                        {/* Staff Feature 2: Stock Management */}
                                         <div className="space-y-4">
-                                            <h5 className="text-lg font-medium text-primary">Resource Requests</h5>
+                                            <h5 className="text-lg font-medium text-primary">Stock Management</h5>
                                             <p className="text-gray-600">
-                                                Submit requests for required supplies, tools, and equipment with detailed justifications.
+                                                View inventory levels, process stock transfers, and receive new shipments.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img
                                                     src="/request-inventory.jpg"
-                                                    alt="Resource Requests"
+                                                    alt="Stock Management"
                                                     className="w-full h-auto"
                                                 />
                                                 <div className="p-3 bg-gray-50">
-                                                    <p className="text-sm text-gray-500">Inventory request form with options to specify quantities and priorities</p>
+                                                    <p className="text-sm text-gray-500">Stock management interface with transfer and receiving options</p>
                                                 </div>
                                             </div>
                                         </div>
 
-
-
-                                        {/* Staff Feature 5: Notifications */}
+                                        {/* Staff Feature 3: Notifications */}
                                         <div className="space-y-4">
                                             <h5 className="text-lg font-medium text-primary">Notification Center</h5>
                                             <p className="text-gray-600">
-                                                Receive updates on schedule changes, request approvals, and system announcements in real-time.
+                                                Receive updates on low stock alerts, payment confirmations, and schedule changes.
                                             </p>
                                             <div className="border rounded-lg overflow-hidden">
                                                 <img

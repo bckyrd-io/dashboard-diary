@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 13, color: Theme.mutedForeground, marginTop: 2 },
   form: {
     marginHorizontal: 16, backgroundColor: Theme.background,
-    borderWidth: 1, borderColor: Theme.border, borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius, padding: 16,
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
 });

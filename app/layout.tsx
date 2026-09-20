@@ -20,8 +20,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-	title: "Diary Dashboard",
-	description: "Farm Management System",
+	title: "The Sneaker Lounge",
+	description: "Home of Shoes and Other Accessories - Micro-ERP System",
 };
 
 

@@ -1,9 +1,9 @@
 // Theme colors matching the Next.js web app
-// Primary: Apple green #33b76d
+// Primary: Blue #1D4ED8 - The Sneaker Lounge brand
 export const Theme = {
-  primary: '#33b76d',
-  primaryDark: '#2a9d5c',
-  primaryLight: '#e8f8f0',
+  primary: '#00CC6A',
+  primaryDark: '#16a34a',
+  primaryLight: '#EFF6FF',
   background: '#ffffff',
   foreground: '#11181c',
   muted: '#f9fafb',
@@ -27,4 +27,13 @@ export const Theme = {
   gray700: '#37414a',
   gray800: '#25292e',
   gray900: '#11181c',
+  // Design tokens
+  radius: 6,
+  shadowSm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
 } as const;

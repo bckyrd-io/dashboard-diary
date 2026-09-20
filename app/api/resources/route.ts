@@ -1,9 +1,9 @@
 import { db } from '../../../drizzle/db';
-import { resourcesTable, activityResourcesTable } from '../../../drizzle/db/schema';
+import { itemsTable, eventItemsTable } from '../../../drizzle/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-// Create a new resource
+// Create a new item (resource)
 export async function POST(req: Request) {
     const { name, quantity, unit, activityId, allocatedQuantity } = await req.json();
 
@@ -12,31 +12,32 @@ export async function POST(req: Request) {
     }
 
     try {
-        const newResource = await db.insert(resourcesTable).values({
+        const newItem = await db.insert(itemsTable).values({
             name,
             quantity: quantity ? Number(quantity) : 0,
             unit: unit || null,
         }).returning();
 
         if (activityId) {
-            await db.insert(activityResourcesTable).values({
-                activityId: Number(activityId),
-                resourceId: newResource[0].id,
-                allocatedQuantity: allocatedQuantity ? Number(allocatedQuantity) : 0,
+            await db.insert(eventItemsTable).values({
+                eventId: Number(activityId),
+                itemId: newItem[0].id,
+                quantity: allocatedQuantity ? Number(allocatedQuantity) : 0,
+                unitPriceAtSale: 0,
             }).returning();
         }
 
-        return NextResponse.json({ success: true, resource: newResource });
+        return NextResponse.json({ success: true, resource: newItem });
     } catch (error) {
         console.error('Error creating resource:', error);
         return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
     }
 }
 
-// Get all resources
+// Get all items (resources)
 export async function GET() {
     try {
-        const resources = await db.select().from(resourcesTable);
+        const resources = await db.select().from(itemsTable);
         return NextResponse.json({ success: true, resources });
     } catch (error) {
         console.error('Error fetching resources:', error);
@@ -44,7 +45,7 @@ export async function GET() {
     }
 }
 
-// Update a resource
+// Update an item (resource)
 export async function PUT(req: Request) {
     const { id, name, quantity, unit, activityId, allocatedQuantity } = await req.json();
 
@@ -54,20 +55,20 @@ export async function PUT(req: Request) {
 
     try {
         const updatedResource = await db
-            .update(resourcesTable)
+            .update(itemsTable)
             .set({
                 name,
                 quantity: quantity !== undefined ? Number(quantity) : 0,
                 unit: unit || null,
             })
-            .where(eq(resourcesTable.id, Number(id)))
+            .where(eq(itemsTable.id, Number(id)))
             .returning();
 
         if (activityId) {
             await db
-                .update(activityResourcesTable)
-                .set({ allocatedQuantity: allocatedQuantity !== undefined ? Number(allocatedQuantity) : 0 })
-                .where(eq(activityResourcesTable.resourceId, Number(id)))
+                .update(eventItemsTable)
+                .set({ quantity: allocatedQuantity !== undefined ? Number(allocatedQuantity) : 0 })
+                .where(eq(eventItemsTable.itemId, Number(id)))
                 .returning();
         }
 
@@ -78,7 +79,7 @@ export async function PUT(req: Request) {
     }
 }
 
-// Delete a resource
+// Delete an item (resource)
 export async function DELETE(req: Request) {
     const { id } = await req.json();
 
@@ -87,8 +88,8 @@ export async function DELETE(req: Request) {
     }
 
     try {
-        await db.delete(activityResourcesTable).where(eq(activityResourcesTable.resourceId, Number(id)));
-        const deletedCount = await db.delete(resourcesTable).where(eq(resourcesTable.id, Number(id))).returning();
+        await db.delete(eventItemsTable).where(eq(eventItemsTable.itemId, Number(id)));
+        const deletedCount = await db.delete(itemsTable).where(eq(itemsTable.id, Number(id))).returning();
 
         if (!deletedCount || deletedCount.length === 0) {
             return NextResponse.json({ success: false, message: 'Resource not found' }, { status: 404 });

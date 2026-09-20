@@ -7,11 +7,14 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  TextInput,
+  Share,
+  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { api } from '../services/api';
-import { Card, ScreenHeader } from '../components/ui';
+import { Card, ScreenHeader, StatusBadge } from '../components/ui';
 import { Theme } from '../constants/Theme';
 
 interface ActivityByType {
@@ -20,18 +23,35 @@ interface ActivityByType {
   activities: string[];
 }
 
+interface ActivityListItem {
+  activityId: number;
+  activityType: string;
+  description: string;
+  amount: number;
+  createdAt: string;
+  resourcesUsed: string;
+  assignedStaff: string;
+  upcomingDates: string;
+  involvedBranches: string;
+}
+
 const screenWidth = Dimensions.get('window').width;
 
 export default function DashboardScreen() {
   const [activitiesByType, setActivitiesByType] = useState<ActivityByType[]>([]);
+  const [activitiesList, setActivitiesList] = useState<ActivityListItem[]>([]);
+  const [filtered, setFiltered] = useState<ActivityListItem[]>([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   const fetchData = async () => {
     try {
-      const result = await api.get<{ activitiesByType: ActivityByType[] }>('/api/dashboard');
+      const result = await api.get<{ activitiesByType: ActivityByType[]; activitiesList: ActivityListItem[] }>('/api/dashboard');
       setActivitiesByType(result.activitiesByType ?? []);
+      setActivitiesList(result.activitiesList ?? []);
+      setFiltered(result.activitiesList ?? []);
       setError('');
     } catch (err: any) {
       setError(err.message ?? 'Failed to load dashboard.');
@@ -42,6 +62,18 @@ export default function DashboardScreen() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    const q = search.toLowerCase();
+    setFiltered(
+      activitiesList.filter(
+        (a) =>
+          a.description.toLowerCase().includes(q) ||
+          a.activityType.toLowerCase().includes(q) ||
+          (a.assignedStaff ?? '').toLowerCase().includes(q)
+      )
+    );
+  }, [search, activitiesList]);
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
@@ -67,6 +99,23 @@ export default function DashboardScreen() {
 
   const hasChartData = chartLabels.length > 0;
 
+  const exportReport = async () => {
+    const lines = filtered.map(
+      (a) =>
+        `[${a.activityId}] ${a.description} | ${a.activityType} | MWK${a.amount} | ${new Date(a.createdAt).toLocaleDateString()}`
+    );
+    await Share.share({
+      message: `Activity Report\nGenerated: ${new Date().toLocaleDateString()}\n\n${lines.join('\n')}`,
+      title: 'Activity Report',
+    });
+  };
+
+  const typeColors: Record<string, string> = {
+    Revenue: Theme.success,
+    Expense: Theme.destructive,
+    Neutral: Theme.mutedForeground,
+  };
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -85,7 +134,7 @@ export default function DashboardScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.primary} />
         }
       >
-        <ScreenHeader title="Analytics" description="Overview of your farm operations" />
+        <ScreenHeader title="Analytics" description="Overview of your operations" />
 
         {error ? (
           <Card style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', marginBottom: 16 }}>
@@ -147,7 +196,7 @@ export default function DashboardScreen() {
                     stroke: Theme.gray200,
                   },
                 }}
-                style={{ borderRadius: 8 }}
+                style={{ borderRadius: Theme.radius }}
                 fromZero
               />
             </ScrollView>
@@ -170,6 +219,59 @@ export default function DashboardScreen() {
             <Text style={{ color: Theme.mutedForeground }}>No activity data to display</Text>
           </Card>
         )}
+
+        {/* Activities Report Section */}
+        <View style={styles.reportSection}>
+          <View style={styles.reportHeader}>
+            <Text style={styles.reportTitle}>Activities ({filtered.length})</Text>
+            <TouchableOpacity onPress={exportReport} style={styles.exportBtn}>
+              <Text style={styles.exportText}>Export</Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search activities..."
+            placeholderTextColor={Theme.mutedForeground}
+            style={styles.searchInput}
+          />
+          {filtered.map((item) => (
+            <Card key={item.activityId} style={{ marginBottom: 12 }}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle} numberOfLines={2}>
+                  {item.description}
+                </Text>
+                <Text style={[styles.cardAmount, { color: typeColors[item.activityType] ?? Theme.gray600 }]}>
+                  MWK{Number(item.amount).toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.cardMeta}>
+                <StatusBadge status={item.activityType} />
+                <Text style={styles.cardDate}>
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              {(item.resourcesUsed || item.assignedStaff || item.involvedBranches) && (
+                <View style={styles.detailsBox}>
+                  {item.resourcesUsed ? (
+                    <Text style={styles.detailText}>Resources: {item.resourcesUsed}</Text>
+                  ) : null}
+                  {item.assignedStaff ? (
+                    <Text style={styles.detailText}>Staff: {item.assignedStaff}</Text>
+                  ) : null}
+                  {item.involvedBranches ? (
+                    <Text style={styles.detailText}>Branches: {item.involvedBranches}</Text>
+                  ) : null}
+                </View>
+              )}
+            </Card>
+          ))}
+          {filtered.length === 0 && !loading && (
+            <Card style={{ padding: 24, alignItems: 'center' }}>
+              <Text style={{ color: Theme.mutedForeground }}>No activities found</Text>
+            </Card>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -190,4 +292,39 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 12, height: 12, borderRadius: 3 },
   legendText: { fontSize: 13, color: Theme.mutedForeground },
+  reportSection: { marginTop: 16 },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  reportTitle: { fontSize: 16, fontWeight: 'bold', color: Theme.gray700 },
+  exportBtn: {
+    backgroundColor: Theme.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Theme.radius,
+  },
+  exportText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: Theme.border,
+    borderRadius: Theme.radius,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: Theme.background,
+    color: Theme.foreground,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
+  cardTitle: { fontWeight: '600', color: Theme.foreground, flex: 1, marginRight: 8, fontSize: 14, lineHeight: 20 },
+  cardAmount: { fontWeight: 'bold', fontSize: 15 },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  cardDate: { color: Theme.mutedForeground, fontSize: 12 },
+  detailsBox: {
+    backgroundColor: Theme.muted, borderRadius: Theme.radius, paddingHorizontal: 12, paddingVertical: 8, gap: 4,
+  },
+  detailText: { color: Theme.mutedForeground, fontSize: 12 },
 });

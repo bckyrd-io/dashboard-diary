@@ -16,8 +16,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.NFC"]
     },
+    "plugins": [],
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"

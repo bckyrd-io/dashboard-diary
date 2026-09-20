@@ -1,6 +1,4 @@
-// pg is loaded at runtime by the seed script; this file may be type-checked
-// without the optional pg type package installed.
-// @ts-expect-error pg may not provide declarations in the seed-only environment.
+// pg is loaded at runtime by the seed script.
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { config } from 'dotenv';
@@ -33,11 +31,12 @@ async function seed() {
 
   console.log('🧹 Cleaning existing data...');
   // Truncate tables in cascade order
+  await db.delete(schema.notificationsTable);
   await db.delete(schema.performanceTable);
   await db.delete(schema.schedulesTable);
-  await db.delete(schema.activityResourcesTable);
-  await db.delete(schema.activitiesTable);
-  await db.delete(schema.resourcesTable);
+  await db.delete(schema.eventItemsTable);
+  await db.delete(schema.eventsTable);
+  await db.delete(schema.itemsTable);
   await db.delete(schema.usersTable);
   await db.delete(schema.branchesTable);
 
@@ -45,9 +44,9 @@ async function seed() {
   const insertedBranches = await db
     .insert(schema.branchesTable)
     .values([
-      { name: 'North Valley Farm', location: 'Lilongwe Rural' },
-      { name: 'Green Acres Estate', location: 'Blantyre West' },
-      { name: 'Highland Orchards', location: 'Mzuzu Hills' },
+      { name: 'The Sneaker Lounge - Main Store', location: 'City Centre' },
+      { name: 'The Sneaker Lounge - Mall Branch', location: 'Game City Mall' },
+      { name: 'The Sneaker Lounge - Warehouse', location: 'Industrial Area' },
     ])
     .returning();
 
@@ -62,194 +61,205 @@ async function seed() {
     .values([
       {
         username: 'admin',
-        email: 'admin@farmdiary.com',
+        email: 'admin@sneakerlounge.com',
         passwordHash: adminPasswordHash,
         branchId: insertedBranches[0].id,
         role: 'admin',
       },
       {
-        username: 'chimwemwe_banda',
-        email: 'chimwemwe@farmdiary.com',
+        username: 'grace_mwangi',
+        email: 'grace@sneakerlounge.com',
+        passwordHash: staffPasswordHash,
+        branchId: insertedBranches[0].id,
+        role: 'Cashier',
+      },
+      {
+        username: 'peter_banda',
+        email: 'peter@sneakerlounge.com',
         passwordHash: staffPasswordHash,
         branchId: insertedBranches[0].id,
         role: 'Staff',
       },
       {
-        username: 'kondwani_phiri',
-        email: 'kondwani@farmdiary.com',
+        username: 'mary_phiri',
+        email: 'mary@sneakerlounge.com',
         passwordHash: staffPasswordHash,
         branchId: insertedBranches[1].id,
-        role: 'Staff',
-      },
-      {
-        username: 'talandira_tembo',
-        email: 'talandira@farmdiary.com',
-        passwordHash: staffPasswordHash,
-        branchId: insertedBranches[2].id,
-        role: 'Staff',
+        role: 'Cashier',
       },
     ])
     .returning();
 
   console.log(`✅ Inserted ${insertedUsers.length} users.`);
 
-  console.log('📦 Inserting Resources...');
-  const insertedResources = await db
-    .insert(schema.resourcesTable)
+  console.log('👟 Inserting Items (Shoe Products)...');
+  const insertedItems = await db
+    .insert(schema.itemsTable)
     .values([
-      { name: 'John Deere 5050D Tractor', quantity: 3, unit: 'units' },
-      { name: 'NPK 23:21:0+4S Fertilizer', quantity: 150, unit: 'bags' },
-      { name: 'Hybrid Maize Seeds (PAN 53)', quantity: 60, unit: 'packs' },
-      { name: 'Drip Irrigation Piping', quantity: 800, unit: 'meters' },
-      { name: 'Solar Water Pump System', quantity: 2, unit: 'systems' },
-      { name: 'Field Operations Crew', quantity: 18, unit: 'workers' },
+      // Office Shoes
+      { name: 'Classic Oxford Brogue', subCategory: 'Office Shoes', price: 45000, costPrice: 28000, quantity: 24, barcode: 'TSL-OF-001', branchId: insertedBranches[0].id },
+      { name: 'Executive Derby Shoe', subCategory: 'Office Shoes', price: 38000, costPrice: 22000, quantity: 18, barcode: 'TSL-OF-002', branchId: insertedBranches[0].id },
+      { name: 'Professional Loafer', subCategory: 'Office Shoes', price: 35000, costPrice: 20000, quantity: 30, barcode: 'TSL-OF-003', branchId: insertedBranches[0].id },
+      // Casual Shoes
+      { name: 'Urban Sneaker Classic', subCategory: 'Casual Shoes', price: 28000, costPrice: 15000, quantity: 45, barcode: 'TSL-CA-001', branchId: insertedBranches[0].id },
+      { name: 'Canvas Slip-On', subCategory: 'Casual Shoes', price: 22000, costPrice: 12000, quantity: 60, barcode: 'TSL-CA-002', branchId: insertedBranches[0].id },
+      { name: 'Leather Boat Shoe', subCategory: 'Casual Shoes', price: 32000, costPrice: 18000, quantity: 20, barcode: 'TSL-CA-003', branchId: insertedBranches[0].id },
+      // Sports Shoes
+      { name: 'Running Performance', subCategory: 'Sports Shoes', price: 55000, costPrice: 32000, quantity: 15, barcode: 'TSL-SP-001', branchId: insertedBranches[1].id },
+      { name: 'Basketball High-Top', subCategory: 'Sports Shoes', price: 65000, costPrice: 38000, quantity: 12, barcode: 'TSL-SP-002', branchId: insertedBranches[1].id },
+      { name: 'Training Cross-Fit', subCategory: 'Sports Shoes', price: 48000, costPrice: 28000, quantity: 22, barcode: 'TSL-SP-003', branchId: insertedBranches[1].id },
+      // Designer Shoes
+      { name: 'Italian Leather Oxford', subCategory: 'Designer Shoes', price: 120000, costPrice: 75000, quantity: 8, barcode: 'TSL-DE-001', branchId: insertedBranches[0].id },
+      { name: 'Handcrafted Monk Strap', subCategory: 'Designer Shoes', price: 95000, costPrice: 58000, quantity: 10, barcode: 'TSL-DE-002', branchId: insertedBranches[0].id },
+      { name: 'Premium Suede Chelsea', subCategory: 'Designer Shoes', price: 85000, costPrice: 52000, quantity: 6, barcode: 'TSL-DE-003', branchId: insertedBranches[1].id },
     ])
     .returning();
 
-  console.log(`✅ Inserted ${insertedResources.length} resources.`);
+  console.log(`✅ Inserted ${insertedItems.length} items.`);
 
-  console.log('🌾 Inserting Activities...');
-  const insertedActivities = await db
-    .insert(schema.activitiesTable)
+  console.log('🛒 Inserting Events (Sales)...');
+  const insertedEvents = await db
+    .insert(schema.eventsTable)
     .values([
       {
-        description: 'Maize Harvest & Bulk Grain Sale',
-        activityType: 'Revenue',
-        amount: 850000,
-        activityDate: '2026-08-15',
+        eventType: 'sale',
+        financialType: 'Revenue',
+        description: 'Walk-in sale - 2 pairs Oxford Brogue',
+        amount: 90000,
+        date: '2026-08-28',
+        branchId: insertedBranches[0].id,
+        paymentMethod: 'cash',
+        paymentStatus: 'success',
       },
       {
-        description: 'Dairy Milk Wholesale Distribution',
-        activityType: 'Revenue',
-        amount: 420000,
-        activityDate: '2026-08-20',
+        eventType: 'sale',
+        financialType: 'Revenue',
+        description: 'Online order - Running Performance + Training Cross-Fit',
+        amount: 103000,
+        date: '2026-08-29',
+        branchId: insertedBranches[1].id,
+        paymentMethod: 'airtel_money',
+        paymentStatus: 'success',
       },
       {
-        description: 'Fresh Tomato & Cabbage Market Supply',
-        activityType: 'Revenue',
-        amount: 195000,
-        activityDate: '2026-08-28',
+        eventType: 'sale',
+        financialType: 'Revenue',
+        description: 'Bulk order - 5 pairs Canvas Slip-On',
+        amount: 110000,
+        date: '2026-08-30',
+        branchId: insertedBranches[0].id,
+        paymentMethod: 'tnm_mpamba',
+        paymentStatus: 'success',
       },
       {
-        description: 'Bulk Fertilizer & Seed Procurement',
-        activityType: 'Expense',
-        amount: 310000,
-        activityDate: '2026-08-10',
-      },
-      {
-        description: 'Tractor Engine Overhaul & Diesel Fuel',
-        activityType: 'Expense',
-        amount: 145000,
-        activityDate: '2026-08-18',
-      },
-      {
-        description: 'Drip Irrigation System Expansion',
-        activityType: 'Expense',
-        amount: 95000,
-        activityDate: '2026-08-25',
-      },
-      {
-        description: 'Field Soil pH Analysis & Crop Rotation Planning',
-        activityType: 'Neutral',
+        eventType: 'receiving',
+        financialType: 'Neutral',
+        description: 'Stock receipt - New Designer Shoes shipment',
         amount: 0,
-        activityDate: '2026-08-05',
+        date: '2026-08-25',
+        branchId: insertedBranches[2].id,
       },
       {
-        description: 'Upcoming Soya Bean Planting Season',
-        activityType: 'Expense',
-        amount: 180000,
-        activityDate: '2026-09-15',
-      },
-      {
-        description: 'Upcoming Broiler Poultry Batch Delivery',
-        activityType: 'Revenue',
-        amount: 620000,
-        activityDate: '2026-09-22',
+        eventType: 'transfer',
+        financialType: 'Neutral',
+        description: 'Stock transfer - Warehouse to Main Store',
+        amount: 0,
+        date: '2026-08-26',
+        branchId: insertedBranches[2].id,
+        toBranchId: insertedBranches[0].id,
       },
     ])
     .returning();
 
-  console.log(`✅ Inserted ${insertedActivities.length} activities.`);
+  console.log(`✅ Inserted ${insertedEvents.length} events.`);
 
-  console.log('🔗 Allocating Resources to Activities...');
-  await db.insert(schema.activityResourcesTable).values([
-    {
-      activityId: insertedActivities[0].id, // Maize Harvest
-      resourceId: insertedResources[0].id, // Tractor
-      allocatedQuantity: 2,
-    },
-    {
-      activityId: insertedActivities[0].id, // Maize Harvest
-      resourceId: insertedResources[5].id, // Field Crew
-      allocatedQuantity: 12,
-    },
-    {
-      activityId: insertedActivities[3].id, // Fertilizer procurement
-      resourceId: insertedResources[1].id, // Fertilizer
-      allocatedQuantity: 50,
-    },
-    {
-      activityId: insertedActivities[3].id, // Seed procurement
-      resourceId: insertedResources[2].id, // Seed
-      allocatedQuantity: 30,
-    },
-    {
-      activityId: insertedActivities[5].id, // Irrigation Expansion
-      resourceId: insertedResources[3].id, // Piping
-      allocatedQuantity: 400,
-    },
+  console.log('📦 Inserting Event Items...');
+  await db.insert(schema.eventItemsTable).values([
+    // Sale 1: 2 pairs Oxford Brogue
+    { eventId: insertedEvents[0].id, itemId: insertedItems[0].id, quantity: 2, unitPriceAtSale: 45000 },
+    // Sale 2: Running Performance + Training Cross-Fit
+    { eventId: insertedEvents[1].id, itemId: insertedItems[6].id, quantity: 1, unitPriceAtSale: 55000 },
+    { eventId: insertedEvents[1].id, itemId: insertedItems[8].id, quantity: 1, unitPriceAtSale: 48000 },
+    // Sale 3: 5 pairs Canvas Slip-On
+    { eventId: insertedEvents[2].id, itemId: insertedItems[4].id, quantity: 5, unitPriceAtSale: 22000 },
+    // Receiving: Designer Shoes
+    { eventId: insertedEvents[3].id, itemId: insertedItems[9].id, quantity: 4, unitPriceAtSale: 75000 },
+    { eventId: insertedEvents[3].id, itemId: insertedItems[10].id, quantity: 3, unitPriceAtSale: 58000 },
+    // Transfer: Casual Shoes from warehouse
+    { eventId: insertedEvents[4].id, itemId: insertedItems[3].id, quantity: 10, unitPriceAtSale: 15000 },
+    { eventId: insertedEvents[4].id, itemId: insertedItems[4].id, quantity: 15, unitPriceAtSale: 12000 },
   ]);
 
   console.log('📅 Inserting Schedules...');
   await db.insert(schema.schedulesTable).values([
     {
-      activityId: insertedActivities[7].id, // Soya bean planting
-      scheduledDate: '2026-09-15',
-      notificationMessage: 'Upcoming activity: Soya Bean Planting Season on 2026-09-15',
+      activityId: insertedEvents[3].id, // Stock receiving
+      scheduledDate: '2026-09-05',
+      notificationMessage: 'Upcoming stock receiving: Designer Shoes shipment on 2026-09-05',
     },
     {
-      activityId: insertedActivities[8].id, // Broiler Poultry
-      scheduledDate: '2026-09-22',
-      notificationMessage: 'Upcoming activity: Broiler Poultry Batch Delivery on 2026-09-22',
-    },
-    {
-      activityId: insertedActivities[4].id, // Tractor Maintenance
-      scheduledDate: '2026-09-30',
-      notificationMessage: 'Upcoming activity: Quarterly Farm Machinery Inspection on 2026-09-30',
+      activityId: insertedEvents[4].id, // Stock transfer
+      scheduledDate: '2026-09-10',
+      notificationMessage: 'Scheduled stock transfer: Warehouse to Main Store on 2026-09-10',
     },
   ]);
 
   console.log('📊 Inserting Staff Performance Records...');
   await db.insert(schema.performanceTable).values([
     {
-      userId: insertedUsers[1].id, // chimwemwe_banda
-      activityId: insertedActivities[0].id, // Maize harvest
+      userId: insertedUsers[1].id, // grace_mwangi
+      activityId: insertedEvents[0].id, // Sale 1
       status: 'Completed',
     },
     {
-      userId: insertedUsers[2].id, // kondwani_phiri
-      activityId: insertedActivities[1].id, // Dairy milk
+      userId: insertedUsers[2].id, // peter_banda
+      activityId: insertedEvents[1].id, // Sale 2
       status: 'Completed',
     },
     {
-      userId: insertedUsers[3].id, // talandira_tembo
-      activityId: insertedActivities[5].id, // Irrigation
+      userId: insertedUsers[1].id, // grace_mwangi
+      activityId: insertedEvents[2].id, // Sale 3
+      status: 'Completed',
+    },
+    {
+      userId: insertedUsers[2].id, // peter_banda
+      activityId: insertedEvents[4].id, // Transfer
       status: 'In Progress',
     },
+  ]);
+
+  console.log('🔔 Inserting Notifications...');
+  await db.insert(schema.notificationsTable).values([
     {
-      userId: insertedUsers[1].id, // chimwemwe_banda
-      activityId: insertedActivities[7].id, // Soya planting
-      status: 'Assigned',
+      userId: insertedUsers[0].id, // admin
+      type: 'low_stock',
+      title: 'Low Stock Alert',
+      body: 'Italian Leather Oxford is running low (8 remaining)',
+      relatedItemId: insertedItems[9].id,
+    },
+    {
+      userId: insertedUsers[1].id, // grace_mwangi
+      type: 'payment_status',
+      title: 'Payment Received',
+      body: 'Walk-in sale completed - MWK 90,000 via Cash',
+      relatedEventId: insertedEvents[0].id,
+    },
+    {
+      userId: insertedUsers[2].id, // peter_banda
+      type: 'assignment',
+      title: 'Stock Transfer Assigned',
+      body: 'You have been assigned to complete stock transfer from Warehouse to Main Store',
+      relatedEventId: insertedEvents[4].id,
     },
   ]);
 
   console.log('\n✨ Database seeding complete! ✨');
   console.log('--------------------------------------------------');
   console.log('🔑 Default Login Credentials:');
-  console.log('   Admin: username = admin          | password = admin123');
-  console.log('   Staff: username = chimwemwe_banda | password = staff123');
-  console.log('   Staff: username = kondwani_phiri  | password = staff123');
-  console.log('   Staff: username = talandira_tembo | password = staff123');
+  console.log('   Admin:  username = admin            | password = admin123');
+  console.log('   Cashier: username = grace_mwangi    | password = staff123');
+  console.log('   Staff:  username = peter_banda      | password = staff123');
+  console.log('   Cashier: username = mary_phiri      | password = staff123');
   console.log('--------------------------------------------------\n');
 
   await pool.end();

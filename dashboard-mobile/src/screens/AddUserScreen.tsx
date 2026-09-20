@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { api } from '../services/api';
-import { Button, Input, ScreenHeader } from '../components/ui';
+import { Button, Card, Input, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
 
 interface Branch {
@@ -22,23 +22,18 @@ export default function AddUserScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api
-      .get<{ branches: Branch[] }>('/api/branches')
+    api.get<{ branches: Branch[] }>('/api/branches')
       .then((result) => setBranches(result.branches ?? []))
       .catch(() => {});
   }, []);
 
   const submit = async () => {
-    if (!username.trim() || !email.trim() || password.length < 4 || !branchId)
+    if (!username.trim() || !email.trim() || password.length < 4 || !branchId) {
       return Alert.alert('Validation', 'Complete all fields and select a branch.');
+    }
     setLoading(true);
     try {
-      const result = await api.post<{ message?: string }>('/api/users', {
-        username,
-        email,
-        password,
-        branchId,
-      });
+      const result = await api.post<{ message?: string }>('/api/users', { username, email, password, branchId });
       if (result.message?.startsWith('Error')) throw new Error(result.message);
       Alert.alert('Success', 'User created successfully.');
       navigation.goBack();
@@ -55,81 +50,128 @@ export default function AddUserScreen() {
         title="Add New User"
         description="Create a staff account"
         action={
-          <Button variant="ghost" style={{ paddingHorizontal: 8 }} onPress={() => navigation.goBack()}>
+          <Button variant="ghost" style={styles.backButton} onPress={() => navigation.goBack()}>
             <ArrowLeft size={20} color={Theme.foreground} />
           </Button>
         }
       />
-      <View style={styles.form}>
-        <Text style={styles.label}>Branch</Text>
-        <View style={styles.branchRow}>
-          {branches.map((branch) => (
-            <TouchableOpacity
-              key={branch.id}
-              onPress={() => setBranchId(branch.id)}
-              style={[
-                styles.branchChip,
-                branchId === branch.id && styles.branchChipActive,
-              ]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {branchId === branch.id ? <Check size={14} color={Theme.primary} /> : null}
-                <Text
-                  style={[
-                    styles.branchChipText,
-                    branchId === branch.id && styles.branchChipTextActive,
-                  ]}
-                >
-                  {branch.name}
-                </Text>
+      <View style={styles.content}>
+        <Card>
+          <View style={styles.form}>
+            <View>
+              <Text style={styles.label}>Branch</Text>
+              <View style={styles.chipContainer}>
+                {branches.map((branch) => (
+                  <TouchableOpacity
+                    key={branch.id}
+                    onPress={() => setBranchId(branch.id)}
+                    style={[
+                      styles.chip,
+                      branchId === branch.id ? styles.chipSelected : styles.chipUnselected,
+                    ]}
+                  >
+                    <View style={styles.chipRow}>
+                      {branchId === branch.id ? <Check size={14} color={Theme.primary} /> : null}
+                      <Text style={[
+                        styles.chipText,
+                        branchId === branch.id ? styles.chipTextSelected : styles.chipTextUnselected,
+                      ]}>
+                        {branch.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+            </View>
 
-        <Text style={styles.label}>Full name</Text>
-        <Input value={username} onChangeText={setUsername} placeholder="Full name" style={{ marginBottom: 16 }} />
+            <View>
+              <Text style={styles.label}>Full name</Text>
+              <Input value={username} onChangeText={setUsername} placeholder="Full name" />
+            </View>
 
-        <Text style={styles.label}>Email</Text>
-        <Input
-          value={email}
-          onChangeText={setEmail}
-          placeholder="name@example.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={{ marginBottom: 16 }}
-        />
+            <View>
+              <Text style={styles.label}>Email</Text>
+              <Input
+                value={email}
+                onChangeText={setEmail}
+                placeholder="name@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-        <Text style={styles.label}>Password</Text>
-        <Input
-          value={password}
-          onChangeText={setPassword}
-          placeholder="At least 4 characters"
-          secureTextEntry
-          style={{ marginBottom: 20 }}
-        />
+            <View>
+              <Text style={styles.label}>Password</Text>
+              <Input
+                value={password}
+                onChangeText={setPassword}
+                placeholder="At least 4 characters"
+                secureTextEntry
+              />
+            </View>
 
-        <Button loading={loading} onPress={submit}>
-          {loading ? 'Creating...' : 'Create user'}
-        </Button>
+            <Button loading={loading} onPress={submit}>
+              {loading ? 'Creating...' : 'Create user'}
+            </Button>
+          </View>
+        </Card>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Theme.muted },
+  container: {
+    flex: 1,
+    backgroundColor: Theme.gray50,
+  },
+  backButton: {
+    paddingHorizontal: 8,
+  },
+  content: {
+    marginHorizontal: 16,
+  },
   form: {
-    marginHorizontal: 16, backgroundColor: Theme.background,
-    borderWidth: 1, borderColor: Theme.border, borderRadius: 12, padding: 16,
+    gap: 20,
   },
-  label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
-  branchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  branchChip: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8,
-    borderWidth: 1, borderColor: Theme.border, backgroundColor: Theme.background,
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.gray700,
+    marginBottom: 4,
   },
-  branchChipActive: { backgroundColor: Theme.successLight, borderColor: Theme.primary },
-  branchChipText: { fontSize: 13, color: Theme.gray700, marginLeft: 4 },
-  branchChipTextActive: { color: Theme.primary, fontWeight: '600' },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  chipSelected: {
+    backgroundColor: Theme.primaryLight,
+    borderColor: Theme.primary,
+  },
+  chipUnselected: {
+    backgroundColor: Theme.background,
+    borderColor: Theme.gray300,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chipText: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  chipTextSelected: {
+    color: Theme.primary,
+    fontWeight: '600',
+  },
+  chipTextUnselected: {
+    color: Theme.gray700,
+  },
 });

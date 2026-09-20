@@ -61,7 +61,7 @@ const LoginPage = () => {
                 title: `Welcome, ${result.user.username}!`,
                 description: "You have successfully logged in.",
             });
-            router.push(result.user.role === "admin" ? "/farm/dashboard" : "/farm/activity");
+            router.push(result.user.role === "admin" ? "/store/dashboard" : "/store/items");
         } catch (err) {
             console.error("Error logging in:", err);
             toast({

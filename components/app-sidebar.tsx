@@ -1,7 +1,7 @@
 "use client";
-import useUserStore from '../app/store/zustand'; // Import your Zustand store
-import { Calendar, Home, Settings, Users, Edit, FolderCheck, PieChart, TableIcon } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation'; // Import necessary hooks
+import useUserStore from '../app/store/zustand';
+import { Calendar, Home, Users, PieChart, TableIcon, Tag, Building, Receipt, Bell, CreditCard } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     Sidebar,
     SidebarContent,
@@ -19,71 +19,76 @@ import Image from 'next/image';
 const items = [
     {
         title: 'Home',
-        url: 'farm/dashboard',
+        url: 'store/dashboard',
         icon: Home,
         roles: ['admin'],
     },
     {
-        title: 'Branch',
-        url: 'farm/branch',
-        icon: Settings,
+        title: 'Items',
+        url: 'store/items',
+        icon: Tag,
+        roles: ['admin', 'Staff', 'Cashier'],
+    },
+    {
+        title: 'Branches',
+        url: 'store/branches',
+        icon: Building,
         roles: ['admin'],
     },
     {
-        title: 'Activity',
-        url: 'farm/activity',
-        icon: Edit,
-        roles: ['Staff', 'admin'],
+        title: 'Events',
+        url: 'store/events',
+        icon: Receipt,
+        roles: ['admin', 'Staff'],
     },
     {
         title: 'Schedule',
-        url: 'farm/schedule',
+        url: 'store/schedule',
         icon: Calendar,
-        roles: ['Staff', 'admin'],
+        roles: ['admin', 'Staff', 'Cashier'],
     },
     {
-        title: 'Resource',
-        url: 'farm/resource',
-        icon: FolderCheck,
-        roles: ['Staff', 'admin'],
+        title: 'Notifications',
+        url: 'store/notifications',
+        icon: Bell,
+        roles: ['admin', 'Cashier'],
     },
     {
         title: 'Performance',
-        url: 'farm/staff',
+        url: 'store/performance',
         icon: PieChart,
         roles: ['admin'],
     },
     {
         title: 'Users',
-        url: 'farm/user',
+        url: 'store/users',
         icon: Users,
         roles: ['admin'],
     },
     {
         title: 'Reports',
-        url: 'farm/report',
+        url: 'store/reports',
         icon: TableIcon,
         roles: ['admin'],
     },
 ];
 
 export function AppSidebar() {
-    const { user, clearUser } = useUserStore(); // Access Zustand store
-    const pathname = usePathname(); // Get the current path
-    const router = useRouter(); // Initialize the router instance
+    const { user, clearUser } = useUserStore();
+    const pathname = usePathname();
+    const router = useRouter();
     const avatarUrl = `https://github.com/shadcn.png`;
 
-    // If user is not logged in, do not render the sidebar
     if (!user) {
         return null;
     }
 
     const handleLogout = () => {
-        clearUser(); // Clear user data from Zustand store
-        router.push('/'); // Redirect to the index page
+        clearUser();
+        router.push('/');
     };
 
-    const isActive = (itemUrl: string) => pathname.startsWith(`/${itemUrl}`); // Check if the current path starts with the item's URL
+    const isActive = (itemUrl: string) => pathname.startsWith(`/${itemUrl}`);
 
     return (
         <Sidebar>
@@ -93,7 +98,7 @@ export function AppSidebar() {
                         <div className="flex items-center gap-x-2 ">
                             <div className="flex items-center justify-center ">
                                 <Image
-                                    src="/logo.png" // Your logo path
+                                    src="/logo.png"
                                     alt="Logo"
                                     width={20}
                                     height={20}
@@ -101,9 +106,9 @@ export function AppSidebar() {
                                 />
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">Ground</span>
+                                <span className="truncate font-semibold">The Sneaker Lounge</span>
                                 <span className="truncate text-xs text-muted-foreground">
-                                    Farm Dashboard
+                                    Home of Shoes and Other Accessories
                                 </span>
                             </div>
                         </div>
@@ -113,7 +118,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <SidebarMenu>
                     {items
-                        .filter((item) => item.roles.includes(user.role)) // Filter items based on the user's role
+                        .filter((item) => item.roles.includes(user.role))
                         .map((item) => (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild>

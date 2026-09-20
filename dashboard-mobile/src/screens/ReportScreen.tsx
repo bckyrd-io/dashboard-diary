@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
   loadingText: { color: Theme.mutedForeground, marginTop: 12 },
   exportBtn: {
-    backgroundColor: Theme.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8,
+    backgroundColor: Theme.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: Theme.radius,
   },
   exportText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   searchInput: {
-    marginHorizontal: 16, borderWidth: 1, borderColor: Theme.border, borderRadius: 8,
+    marginHorizontal: 16, borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius,
     paddingHorizontal: 12, paddingVertical: 10, backgroundColor: Theme.background,
     color: Theme.foreground, fontSize: 14,
   },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   cardDate: { color: Theme.mutedForeground, fontSize: 12 },
   detailsBox: {
-    backgroundColor: Theme.muted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, gap: 4,
+    backgroundColor: Theme.muted, borderRadius: Theme.radius, paddingHorizontal: 12, paddingVertical: 8, gap: 4,
   },
   detailText: { color: Theme.mutedForeground, fontSize: 12 },
 });

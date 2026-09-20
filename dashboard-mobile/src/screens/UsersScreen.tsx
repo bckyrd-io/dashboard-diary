@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.muted },
   userRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: Theme.gray100,
+    width: 40, height: 40, borderRadius: Theme.radius, backgroundColor: Theme.gray100,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { color: Theme.gray700, fontWeight: 'bold', fontSize: 16 },
