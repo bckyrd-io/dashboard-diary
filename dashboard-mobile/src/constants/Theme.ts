@@ -30,10 +30,13 @@ export const Theme = {
   // Design tokens
   radius: 6,
   shadowSm: {
+    // Keep native shadow props for React Native; add boxShadow for web (react-native-web deprecation path)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    // web-friendly CSS box-shadow equivalent
+    boxShadow: '0px 1px 2px rgba(0,0,0,0.05)'
   },
 } as const;

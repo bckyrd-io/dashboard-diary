@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd C:\\\\Users\\\\Administrator\\\\Documents\\\\Github\\\\dashboard-diary\\\\dashboard-mobile; node -e \"require\\('hermes-parser'\\); console\\.log\\('hermes-parser require OK'\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

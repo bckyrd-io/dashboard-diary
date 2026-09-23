@@ -165,24 +165,22 @@ export default function DashboardScreen() {
           <Card style={{ marginTop: 16, padding: 16 }}>
             <Text style={styles.chartTitle}>Metrics Overview</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {/* react-native-chart-kit BarChart on web expects a single dataset. Combine amounts into a single dataset matching chartLabels */}
               <BarChart
                 data={{
                   labels: chartLabels,
                   datasets: [
                     {
-                      data: chartRevenue.length > 0 ? chartRevenue : [0],
-                      color: () => Theme.primary,
-                    },
-                    {
-                      data: chartExpense.length > 0 ? chartExpense : [0],
-                      color: () => '#ff4d4d',
+                      data: chartLabels.map((label) => {
+                        const match = activitiesByType.find((a) => a.activityType === label);
+                        return match ? match.totalAmount : 0;
+                      }),
                     },
                   ],
                 }}
                 width={Math.max(screenWidth - 64, chartLabels.length * 100)}
                 height={220}
                 yAxisLabel="MWK"
-                yAxisSuffix=""
                 chartConfig={{
                   backgroundColor: Theme.background,
                   backgroundGradientFrom: Theme.background,
