@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Flashlight, FlashlightOff } from 'lucide-react-native';
+import { ChevronLeft, Flashlight, FlashlightOff } from 'lucide-react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
@@ -144,7 +144,7 @@ export default function ScannerScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#fff" />
+            <ChevronLeft size={26} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {mode === 'lookup' ? 'Scan to Lookup' : 'Scan to Add to Cart'}

@@ -16,6 +16,7 @@ import BranchesScreen from '../screens/BranchesScreen';
 import BranchStockScreen from '../screens/BranchStockScreen';
 import AddBranchScreen from '../screens/AddBranchScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
+import PaymentScreen from '../screens/PaymentScreen';
 import ScannerScreen from '../screens/ScannerScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
@@ -194,6 +195,7 @@ export default function AppNavigator() {
       <Stack.Screen name="AddItem" component={AddItemScreen} />
       <Stack.Screen name="Scanner" component={ScannerScreen} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+      <Stack.Screen name="PaymentScreen" component={PaymentScreen} />
     </Stack.Navigator>
   );
 }

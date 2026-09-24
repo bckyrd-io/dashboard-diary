@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Alert, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
 import { api } from '../services/api';
-import { Button, Input } from '../components/ui';
+import { Button, Input, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
 
 export default function AddBranchScreen() {
@@ -33,15 +33,11 @@ export default function AddBranchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>New Branch</Text>
-          <Text style={styles.headerSub}>Add a farm location</Text>
-        </View>
-        <Button variant="ghost" style={{ paddingHorizontal: 8 }} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color={Theme.foreground} />
-        </Button>
-      </View>
+      <ScreenHeader
+        title="New Branch"
+        description="Add a farm location"
+        back={() => navigation.goBack()}
+      />
       <View style={styles.form}>
         <Text style={styles.label}>Branch name</Text>
         <Input value={name} onChangeText={setName} placeholder="e.g. North Farm" style={{ marginBottom: 16 }} />
@@ -57,12 +53,6 @@ export default function AddBranchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.muted },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-  },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: Theme.foreground },
-  headerSub: { fontSize: 13, color: Theme.mutedForeground, marginTop: 2 },
   form: {
     marginHorizontal: 16, backgroundColor: Theme.background,
     borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius, padding: 16,

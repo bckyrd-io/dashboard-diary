@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Save, Package } from 'lucide-react-native';
+import { Package } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
+import { ScreenHeader } from '../components/ui';
 
 interface Item {
   id: number;
@@ -98,20 +99,10 @@ export default function AddItemScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={Theme.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditing ? 'Edit Item' : 'Add Item'}</Text>
-        <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveButton}>
-          {loading ? (
-            <ActivityIndicator size="small" color={Theme.primary} />
-          ) : (
-            <Save size={20} color={Theme.primary} />
-          )}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={isEditing ? 'Edit Item' : 'Add Item'}
+        back={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Product Name */}
@@ -266,18 +257,6 @@ export default function AddItemScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.border,
-  },
-  backButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Theme.foreground },
-  saveButton: { padding: 8 },
   content: { padding: 16, paddingBottom: 40 },
   field: { marginBottom: 20 },
   label: {

@@ -4,10 +4,10 @@ import {
   Text,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, DateData } from 'react-native-calendars';
 import { api } from '../services/api';
 import { Card, EmptyState, ScreenHeader } from '../components/ui';

@@ -7,13 +7,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
-  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import {
-  ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   ArrowDownLeft,
   Package,
@@ -23,9 +20,10 @@ import {
   Minus,
 } from 'lucide-react-native';
 import { api } from '../services/api';
-import { Card } from '../components/ui';
+import { Card, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
 import { useTransfer } from '../context/TransferContext';
+import { confirmDialog } from '../utils/confirm';
 
 interface Item {
   id: number;
@@ -154,21 +152,13 @@ export default function BranchStockScreen() {
         }, 1);
       };
 
-      if (typeof window !== 'undefined' && (window as any).confirm) {
-        const ok = (window as any).confirm(
-          `You currently have items selected from ${sourceBranchName}. Clear them and start transferring from ${branchName}?`
-        );
-        if (ok) proceedSwitch();
-      } else {
-        Alert.alert(
-          'Switch Source Branch',
-          `You currently have items selected from ${sourceBranchName}. Clear them and start transferring from ${branchName}?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Switch', style: 'destructive', onPress: proceedSwitch },
-          ]
-        );
-      }
+      confirmDialog(
+        'Switch Source Branch',
+        `You currently have items selected from ${sourceBranchName}. Clear them and start transferring from ${branchName}?`,
+        proceedSwitch,
+        'Switch',
+        'Cancel'
+      );
       return;
     }
 
@@ -232,15 +222,11 @@ export default function BranchStockScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color={Theme.foreground} />
-        </TouchableOpacity>
-        <View style={styles.titleInfo}>
-          <Text style={styles.screenTitle}>{branchName}</Text>
-          <Text style={styles.screenSubtitle}>Select items to transfer to another branch</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title={branchName}
+        description="Select items to transfer to another branch"
+        back={() => navigation.goBack()}
+      />
 
       <FlatList
         data={items}
@@ -248,10 +234,7 @@ export default function BranchStockScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.primary]} />
         }
-        contentContainerStyle={[
-          styles.listContent,
-          isCurrentSource && currentTotalQuantity > 0 && { paddingBottom: 110 },
-        ]}
+        contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionSubtitle}>
@@ -404,25 +387,6 @@ export default function BranchStockScreen() {
           ) : null
         }
       />
-
-      {isCurrentSource && currentTotalQuantity > 0 && (
-        <View style={styles.bottomBar}>
-          <View style={styles.bottomBarInfo}>
-            <Text style={styles.bottomBarTitle}>
-              {currentTotalQuantity} item{currentTotalQuantity === 1 ? '' : 's'} selected
-            </Text>
-            <Text style={styles.bottomBarSub}>From {branchName}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.proceedBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.proceedBtnText}>Choose Destination</Text>
-            <ArrowRight size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -430,19 +394,6 @@ export default function BranchStockScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.muted },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Theme.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.border,
-  },
-  backBtn: { padding: 6, marginRight: 8 },
-  titleInfo: { flex: 1 },
-  screenTitle: { fontSize: 17, fontWeight: '700', color: Theme.foreground },
-  screenSubtitle: { fontSize: 12, color: Theme.mutedForeground, marginTop: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
   sectionHeader: { marginTop: 16, marginBottom: 10 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: Theme.foreground },
@@ -534,50 +485,4 @@ const styles = StyleSheet.create({
   transferMeta: { fontSize: 11, color: Theme.mutedForeground, marginTop: 2 },
   transferTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   transferTagText: { fontSize: 10, fontWeight: '700' },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Theme.background,
-    borderTopWidth: 1,
-    borderTopColor: Theme.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  bottomBarInfo: {
-    flex: 1,
-  },
-  bottomBarTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Theme.foreground,
-  },
-  bottomBarSub: {
-    fontSize: 12,
-    color: Theme.mutedForeground,
-    marginTop: 1,
-  },
-  proceedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Theme.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  proceedBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
 });

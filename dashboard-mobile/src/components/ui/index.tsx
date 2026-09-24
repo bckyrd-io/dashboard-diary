@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button as ExpoButton, TextInput as ExpoTextInput, Text as ExpoText, Column, Row } from '@expo/ui';
-import { AlertCircle, Info } from 'lucide-react-native';
+import { AlertCircle, Info, ChevronLeft } from 'lucide-react-native';
 import { Theme } from '../../constants/Theme';
 
 // ── Card ────────────────────────────────────────────────────────────────────
@@ -137,13 +137,20 @@ export function ScreenHeader({
   title,
   description,
   action,
+  back,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  back?: () => void;
 }) {
   return (
     <View style={styles.screenHeader}>
+      {back ? (
+        <TouchableOpacity onPress={back} style={styles.screenBackBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <ChevronLeft size={26} color={Theme.foreground} />
+        </TouchableOpacity>
+      ) : null}
       <View style={{ flex: 1, paddingRight: 12 }}>
         <Text style={styles.screenTitle}>{title}</Text>
         {description ? (
@@ -229,6 +236,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+  },
+  screenBackBtn: {
+    marginRight: 4,
+    marginTop: -2,
+    padding: 2,
   },
   screenTitle: {
     fontSize: 24,

@@ -1,35 +1,61 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 
-// Configure foreground notification behavior on native platforms
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+type NotificationsModule = typeof import('expo-notifications');
+
+let modulePromise: Promise<NotificationsModule | null> | null = null;
+let handlerConfigured = false;
+let initialized = false;
+
+/**
+ * Lazily loads expo-notifications. The module is imported only when a local
+ * notification is actually triggered, never at app startup, so its module-level
+ * Expo Go / push-token side effects never run on launch.
+ */
+function loadNotifications(): Promise<NotificationsModule | null> {
+  if (!modulePromise) {
+    modulePromise = import('expo-notifications').then(
+      (module) => {
+        configureNotificationHandler(module);
+        return module;
+      },
+      () => null
+    );
+    // If the dynamic import fails, allow a retry on the next call.
+    modulePromise.catch(() => {
+      modulePromise = null;
+    });
+  }
+  return modulePromise;
+}
+
+function configureNotificationHandler(module: NotificationsModule) {
+  if (handlerConfigured || Platform.OS === 'web') return;
+  try {
+    module.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    handlerConfigured = true;
+  } catch {
+    // Safe no-op if the native module is unavailable.
+  }
 }
 
 /**
- * Initialize local notification settings, permissions, and Android channels.
+ * Ensure local notification permissions are granted and the Android channel
+ * exists. Runs once, lazily, right before the first notification is sent so
+ * permissions are only ever requested when the feature is actually used.
  */
-export async function initNotifications(): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        if (Notification.permission === 'default') {
-          await Notification.requestPermission();
-        }
-      } catch {
-        // Safe no-op if blocked in iframe/browser
-      }
-    }
-    return true;
-  }
+async function ensureInitialized(): Promise<void> {
+  if (initialized || Platform.OS === 'web') return;
+
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
 
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -40,12 +66,7 @@ export async function initNotifications(): Promise<boolean> {
       finalStatus = status;
     }
 
-    if (finalStatus !== 'granted') {
-      console.warn('Notification permissions not granted');
-      return false;
-    }
-
-    if (Platform.OS === 'android') {
+    if (finalStatus === 'granted' && Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Default Channel',
         importance: Notifications.AndroidImportance.MAX,
@@ -55,10 +76,9 @@ export async function initNotifications(): Promise<boolean> {
       });
     }
 
-    return true;
-  } catch (error) {
-    console.error('Error initializing notifications:', error);
-    return false;
+    initialized = true;
+  } catch {
+    // Permission or channel setup failed; scheduling below still attempts.
   }
 }
 
@@ -81,6 +101,10 @@ export async function sendLocalNotification(
     }
     return null;
   }
+
+  await ensureInitialized();
+  const Notifications = await loadNotifications();
+  if (!Notifications) return null;
 
   try {
     const id = await Notifications.scheduleNotificationAsync({
@@ -117,6 +141,10 @@ export async function scheduleLocalNotification(
     return 'web-scheduled';
   }
 
+  await ensureInitialized();
+  const Notifications = await loadNotifications();
+  if (!Notifications) return null;
+
   try {
     const id = await Notifications.scheduleNotificationAsync({
       content: {
@@ -142,6 +170,8 @@ export async function scheduleLocalNotification(
  */
 export async function cancelAllNotifications(): Promise<void> {
   if (Platform.OS === 'web') return;
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (error) {

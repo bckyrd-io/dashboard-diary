@@ -10,7 +10,7 @@ interface Branch {
 	id: number;
 	name: string;
 	location: string;
-	userCount: number; // Add userCount to the interface
+	itemCount: number; // Number of inventory items at this branch
 }
 
 const Branch = () => {
@@ -60,7 +60,7 @@ const Branch = () => {
 						<Card key={branch.id} className="p-4 shadow-none">
 							<h2 className="text-lg font-semibold">{branch.name} </h2>
 							<i className="text-lg text-gray-600">{branch.location} -
-								{branch.userCount} staff
+								{branch.itemCount} items
 							</i>
 						</Card>
 					))

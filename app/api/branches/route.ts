@@ -1,5 +1,5 @@
 import { db } from '../../../drizzle/db';
-import { branchesTable, usersTable } from '../../../drizzle/db/schema';
+import { branchesTable, itemsTable } from '../../../drizzle/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
@@ -26,21 +26,21 @@ export async function POST(req: Request) {
     }
 }
 
-// Get All Branches with Additional Metrics (like user count)
+// Get All Branches with Additional Metrics (inventory count per branch)
 export async function GET() {
     try {
-        const branchesWithUserCount = await db
+        const branchesWithItemCount = await db
             .select({
                 id: branchesTable.id,
                 name: branchesTable.name,
                 location: branchesTable.location,
-                userCount: sql<number>`count(${usersTable.id})::int`.as('userCount')
+                itemCount: sql<number>`count(${itemsTable.id})::int`.as('itemCount')
             })
             .from(branchesTable)
-            .leftJoin(usersTable, eq(usersTable.branchId, branchesTable.id))
+            .leftJoin(itemsTable, eq(itemsTable.branchId, branchesTable.id))
             .groupBy(branchesTable.id, branchesTable.name, branchesTable.location);
 
-        return NextResponse.json({ success: true, branches: branchesWithUserCount });
+        return NextResponse.json({ success: true, branches: branchesWithItemCount });
     } catch (error: unknown) {
         console.error('Error fetching branches:', error);
         return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

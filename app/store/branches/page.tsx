@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users } from "lucide-react";
+import { Building2, Package } from "lucide-react";
 
 interface Branch {
   id: number;
   name: string;
   location: string;
-  userCount: number;
+  itemCount: number;
 }
 
 export default function BranchesPage() {
@@ -51,7 +51,7 @@ export default function BranchesPage() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">Location</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Staff Count</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Inventory Items</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -64,8 +64,8 @@ export default function BranchesPage() {
                       <td className="py-3 px-4 text-muted-foreground">{branch.location}</td>
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <Users className="h-3.5 w-3.5" />
-                          {branch.userCount}
+                          <Package className="h-3.5 w-3.5" />
+                          {branch.itemCount}
                         </span>
                       </td>
                     </tr>

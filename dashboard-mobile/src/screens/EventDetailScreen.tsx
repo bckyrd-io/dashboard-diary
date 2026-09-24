@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Calendar, DollarSign, CreditCard, Package, MapPin } from 'lucide-react-native';
+import { Calendar, DollarSign, CreditCard, Package, MapPin } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
+import { ScreenHeader } from '../components/ui';
 
 interface EventItem {
   id: number;
@@ -116,14 +117,7 @@ export default function EventDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={Theme.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Event Details</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Event Details" back={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Event Type Badge */}
@@ -222,17 +216,6 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16, color: Theme.gray500 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.border,
-  },
-  backButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Theme.foreground },
   content: { padding: 16 },
   typeBadge: {
     paddingHorizontal: 12,

@@ -5,9 +5,9 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../services/api';
 import { Card, EmptyState, ScreenHeader, StatusBadge } from '../components/ui';
 import { Theme } from '../constants/Theme';

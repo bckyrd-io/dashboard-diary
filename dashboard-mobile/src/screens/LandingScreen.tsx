@@ -1,30 +1,57 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
+  Image,
+  ImageSourcePropType,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { HelpCircle, ShoppingBag } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
 
+const SCREENSHOTS: Record<string, ImageSourcePropType> = {
+  users: require('../../assets/screenshots/users.png'),
+  inventory: require('../../assets/screenshots/inventory.png'),
+  analytics: require('../../assets/screenshots/analytics.png'),
+  schedule: require('../../assets/screenshots/schedule.png'),
+  performance: require('../../assets/screenshots/performance.png'),
+  checkout: require('../../assets/screenshots/checkout.png'),
+  stock: require('../../assets/screenshots/stock-transfer.png'),
+  notifications: require('../../assets/screenshots/notifications.png'),
+};
+
 export default function LandingScreen() {
   const navigation = useNavigation();
+  const scrollRef = useRef<ScrollView>(null);
+  const helpRef = useRef<View>(null);
 
   const handleGetStarted = () => {
     navigation.navigate('Login' as never);
   };
 
   const scrollToHelp = () => {
-    alert('Help section is below!');
+    helpRef.current?.measureLayout(
+      scrollRef.current as any,
+      (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(y - 16, 0), animated: true }),
+      () => {}
+    );
   };
 
-  const renderFeatureCard = (title: string, description: string, icon: string) => (
+  const renderFeatureCard = (
+    title: string,
+    description: string,
+    screenshot: ImageSourcePropType,
+    fallbackEmoji: string
+  ) => (
     <View style={styles.featureCard}>
-      <Text style={styles.featureIcon}>{icon}</Text>
+      <View style={styles.featureImageWrap}>
+        <Image source={screenshot} style={styles.featureImage} resizeMode="cover" />
+        {!screenshot ? <Text style={styles.featureIcon}>{fallbackEmoji}</Text> : null}
+      </View>
       <Text style={styles.featureTitle}>{title}</Text>
       <Text style={styles.featureDescription}>{description}</Text>
     </View>
@@ -32,7 +59,7 @@ export default function LandingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
@@ -60,7 +87,7 @@ export default function LandingScreen() {
         </View>
 
         {/* Help Section */}
-        <View style={styles.helpSection}>
+        <View style={styles.helpSection} ref={helpRef}>
           <Text style={styles.sectionTitle}>User Guide</Text>
           <Text style={styles.sectionDescription}>
             This guide provides an overview of system functionalities, installation
@@ -74,11 +101,11 @@ export default function LandingScreen() {
               Store administrators have full access to manage the entire system,
               including users, inventory, finances, and reporting.
             </Text>
-            {renderFeatureCard('User Management', 'Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.', '👷')}
-            {renderFeatureCard('Inventory Management', 'Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.', '👟')}
-            {renderFeatureCard('Financial Analytics', 'Record revenue and expenses. Generate profit reports and financial analyses with visual charts.', '📈')}
-            {renderFeatureCard('Schedule Management', 'Create and assign work schedules to staff members. Set recurring activities and manage calendar events.', '📅')}
-            {renderFeatureCard('Staff Performance', 'Monitor productivity metrics and generate performance reports for individual staff members.', '📊')}
+            {renderFeatureCard('User Management', 'Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.', SCREENSHOTS.users, '👷')}
+            {renderFeatureCard('Inventory Management', 'Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.', SCREENSHOTS.inventory, '👟')}
+            {renderFeatureCard('Financial Analytics', 'Record revenue and expenses. Generate profit reports and financial analyses with visual charts.', SCREENSHOTS.analytics, '📈')}
+            {renderFeatureCard('Schedule Management', 'Create and assign work schedules to staff members. Set recurring activities and manage calendar events.', SCREENSHOTS.schedule, '📅')}
+            {renderFeatureCard('Staff Performance', 'Monitor productivity metrics and generate performance reports for individual staff members.', SCREENSHOTS.performance, '📊')}
           </View>
 
           {/* Staff Features */}
@@ -88,9 +115,9 @@ export default function LandingScreen() {
               Store staff members have focused access to tools for daily operations,
               processing sales, and managing inventory.
             </Text>
-            {renderFeatureCard('Checkout Processing', 'Process customer sales with multiple payment methods including mobile money.', '💳')}
-            {renderFeatureCard('Stock Management', 'View inventory levels, process stock transfers, and receive new shipments.', '📦')}
-            {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', '🔔')}
+            {renderFeatureCard('Checkout Processing', 'Process customer sales with multiple payment methods including mobile money.', SCREENSHOTS.checkout, '💳')}
+            {renderFeatureCard('Stock Management', 'View inventory levels, process stock transfers, and receive new shipments.', SCREENSHOTS.stock, '📦')}
+            {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', SCREENSHOTS.notifications, '🔔')}
           </View>
         </View>
       </ScrollView>
@@ -129,7 +156,20 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.muted, borderRadius: Theme.radius, padding: 16,
     marginBottom: 16, borderWidth: 1, borderColor: Theme.border,
   },
-  featureIcon: { fontSize: 32, marginBottom: 12 },
+  featureImageWrap: {
+    width: '100%',
+    height: 180,
+    borderRadius: Theme.radius,
+    backgroundColor: Theme.background,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    overflow: 'hidden',
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureImage: { width: '100%', height: '100%' },
+  featureIcon: { fontSize: 40 },
   featureTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8, color: Theme.primary },
   featureDescription: { fontSize: 14, color: '#4b5563', lineHeight: 20 },
 });

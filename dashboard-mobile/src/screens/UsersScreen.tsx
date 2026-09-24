@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  SafeAreaView,
   Text,
   View,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Mail, UserPlus, Users as UsersIcon } from 'lucide-react-native';
 import { api } from '../services/api';

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Button, Card, Input, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
@@ -49,11 +50,7 @@ export default function AddUserScreen() {
       <ScreenHeader
         title="Add New User"
         description="Create a staff account"
-        action={
-          <Button variant="ghost" style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeft size={20} color={Theme.foreground} />
-          </Button>
-        }
+        back={() => navigation.goBack()}
       />
       <View style={styles.content}>
         <Card>
@@ -124,9 +121,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Theme.gray50,
-  },
-  backButton: {
-    paddingHorizontal: 8,
   },
   content: {
     marginHorizontal: 16,

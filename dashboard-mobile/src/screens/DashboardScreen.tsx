@@ -5,13 +5,13 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   TextInput,
   Share,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-chart-kit';
 import { api } from '../services/api';
 import { Card, ScreenHeader, StatusBadge } from '../components/ui';
@@ -181,6 +181,7 @@ export default function DashboardScreen() {
                 width={Math.max(screenWidth - 64, chartLabels.length * 100)}
                 height={220}
                 yAxisLabel="MWK"
+                yAxisSuffix=""
                 chartConfig={{
                   backgroundColor: Theme.background,
                   backgroundGradientFrom: Theme.background,
@@ -233,37 +234,52 @@ export default function DashboardScreen() {
             placeholderTextColor={Theme.mutedForeground}
             style={styles.searchInput}
           />
-          {filtered.map((item) => (
-            <Card key={item.activityId} style={{ marginBottom: 12 }}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.description}
-                </Text>
-                <Text style={[styles.cardAmount, { color: typeColors[item.activityType] ?? Theme.gray600 }]}>
-                  MWK{Number(item.amount).toLocaleString()}
-                </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={{ minWidth: '100%' }}>
+            <View style={styles.table}>
+              <View style={styles.tableHeaderRow}>
+                <Text style={[styles.th, styles.colDescription]}>Description</Text>
+                <Text style={[styles.th, styles.colType]}>Type</Text>
+                <Text style={[styles.th, styles.colStaff]}>Staff</Text>
+                <Text style={[styles.th, styles.colAmount]}>Amount</Text>
+                <Text style={[styles.th, styles.colDate]}>Date</Text>
               </View>
-              <View style={styles.cardMeta}>
-                <StatusBadge status={item.activityType} />
-                <Text style={styles.cardDate}>
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              {(item.resourcesUsed || item.assignedStaff || item.involvedBranches) && (
-                <View style={styles.detailsBox}>
-                  {item.resourcesUsed ? (
-                    <Text style={styles.detailText}>Resources: {item.resourcesUsed}</Text>
-                  ) : null}
-                  {item.assignedStaff ? (
-                    <Text style={styles.detailText}>Staff: {item.assignedStaff}</Text>
-                  ) : null}
-                  {item.involvedBranches ? (
-                    <Text style={styles.detailText}>Branches: {item.involvedBranches}</Text>
-                  ) : null}
+              {filtered.map((item, index) => (
+                <View
+                  key={item.activityId}
+                  style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlt]}
+                >
+                  <View style={styles.colDescription}>
+                    <Text style={styles.tdDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                    {item.resourcesUsed || item.involvedBranches ? (
+                      <Text style={styles.tdSecondary} numberOfLines={1}>
+                        {[item.resourcesUsed, item.involvedBranches].filter(Boolean).join(' • ')}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={styles.colType}>
+                    <StatusBadge status={item.activityType} />
+                  </View>
+                  <Text style={[styles.td, styles.colStaff]} numberOfLines={1}>
+                    {item.assignedStaff || '—'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.td,
+                      styles.colAmount,
+                      { color: typeColors[item.activityType] ?? Theme.gray600, fontWeight: '700' },
+                    ]}
+                  >
+                    MWK{Number(item.amount).toLocaleString()}
+                  </Text>
+                  <Text style={[styles.td, styles.colDate]}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Text>
                 </View>
-              )}
-            </Card>
-          ))}
+              ))}
+            </View>
+          </ScrollView>
           {filtered.length === 0 && !loading && (
             <Card style={{ padding: 24, alignItems: 'center' }}>
               <Text style={{ color: Theme.mutedForeground }}>No activities found</Text>
@@ -316,13 +332,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
-  cardTitle: { fontWeight: '600', color: Theme.foreground, flex: 1, marginRight: 8, fontSize: 14, lineHeight: 20 },
-  cardAmount: { fontWeight: 'bold', fontSize: 15 },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  cardDate: { color: Theme.mutedForeground, fontSize: 12 },
-  detailsBox: {
-    backgroundColor: Theme.muted, borderRadius: Theme.radius, paddingHorizontal: 12, paddingVertical: 8, gap: 4,
+  table: {
+    backgroundColor: Theme.background,
+    borderRadius: Theme.radius,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    overflow: 'hidden',
   },
-  detailText: { color: Theme.mutedForeground, fontSize: 12 },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: Theme.muted,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.border,
+    alignItems: 'center',
+    gap: 8,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.border,
+    alignItems: 'center',
+    gap: 8,
+  },
+  tableRowAlt: { backgroundColor: Theme.muted },
+  th: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Theme.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  td: { fontSize: 13, color: Theme.foreground },
+  tdDescription: { fontSize: 13, fontWeight: '600', color: Theme.foreground },
+  tdSecondary: { fontSize: 11, color: Theme.mutedForeground, marginTop: 2 },
+  colDescription: { minWidth: 170, flex: 2 },
+  colType: { minWidth: 96, flex: 1 },
+  colStaff: { minWidth: 90, flex: 1 },
+  colAmount: { minWidth: 110, flex: 1, textAlign: 'right' },
+  colDate: { minWidth: 92, flex: 1, textAlign: 'right' },
 });

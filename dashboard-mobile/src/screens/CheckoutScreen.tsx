@@ -28,8 +28,6 @@ import {
 import { useCart, CartItem } from '../context/CartContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
-import NfcPaymentModal from '../components/NfcPaymentModal';
-import { NfcPaymentResult } from '../services/nfcService';
 
 type PaymentMethod = 'cash' | 'nfc_tap' | 'airtel_money' | 'tnm_mpamba';
 
@@ -52,13 +50,11 @@ export default function CheckoutScreen() {
   const [pastSales, setPastSales] = useState<SaleEvent[]>([]);
   const [pastSalesLoading, setPastSalesLoading] = useState(true);
   const [editingSaleId, setEditingSaleId] = useState<number | null>(null);
-  const [nfcModalVisible, setNfcModalVisible] = useState(false);
 
   const paymentMethods: { id: PaymentMethod; label: string; icon: typeof CreditCard }[] = [
     { id: 'cash', label: 'Cash', icon: Banknote },
-    { id: 'nfc_tap', label: 'NFC Card Tap', icon: Radio },
-    { id: 'airtel_money', label: 'Airtel Money', icon: Smartphone },
-    { id: 'tnm_mpamba', label: 'TNM Mpamba', icon: Smartphone },
+    { id: 'nfc_tap', label: 'NFC', icon: Radio },
+    { id: 'tnm_mpamba', label: 'Mobile', icon: Smartphone },
   ];
 
   const formatPrice = (price: number) => `MWK ${price.toLocaleString()}`;
@@ -119,7 +115,7 @@ export default function CheckoutScreen() {
     setEditingSaleId(null);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (items.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to the cart before checkout.');
       return;
@@ -133,66 +129,17 @@ export default function CheckoutScreen() {
           { text: 'Update', onPress: processUpdateCheckout },
         ]
       );
-    } else if (selectedPayment === 'nfc_tap') {
-      setNfcModalVisible(true);
     } else {
-      Alert.alert(
-        'Confirm Checkout',
-        `Process payment of ${formatPrice(total)} via ${selectedPayment.replace('_', ' ')}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Pay Now', onPress: () => processPayment() },
-        ]
-      );
-    }
-  };
-
-  const handleNfcPaymentSuccess = async (nfcResult: NfcPaymentResult) => {
-    setNfcModalVisible(false);
-    const cardInfo = `${nfcResult.cardBrand || 'NFC Contactless'} (•••• ${nfcResult.lastFour})`;
-    const customDesc = `Sale - ${items.length} item(s) [${cardInfo}]`;
-    await processPayment(nfcResult.reference, customDesc);
-  };
-
-  const processPayment = async (nfcReference?: string, customDescription?: string) => {
-    setLoading(true);
-    try {
-      const result = await api.post<{ success: boolean; event: any; message?: string }>(
-        '/api/checkout',
-        {
-          items: items.map((item) => ({
-            itemId: item.itemId,
-            quantity: item.quantity,
-            unitPriceAtSale: item.price,
-          })),
-          paymentMethod: selectedPayment,
-          paymentReference: nfcReference || null,
-          description: customDescription || `Sale - ${items.length} item(s)`,
-        }
-      );
-      if (result.success) {
-        clearCart();
-        setEditingSaleId(null);
-        fetchPastSales();
-        Alert.alert(
-          'Payment Successful',
-          `Payment of ${formatPrice(total)} processed successfully.${nfcReference ? `\n\nNFC Ref: ${nfcReference}` : ''}`,
-          [
-            {
-              text: 'View Receipt',
-              onPress: () => (navigation as any).navigate('EventDetail', { eventId: result.event.id }),
-            },
-            { text: 'OK' },
-          ]
-        );
-      } else {
-        Alert.alert('Payment Failed', result.message || 'Please try again.');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      Alert.alert('Error', 'An error occurred during checkout. Please try again.');
-    } finally {
-      setLoading(false);
+      (navigation as any).navigate('PaymentScreen', {
+        items: items.map((i) => ({
+          itemId: i.itemId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+        total,
+        paymentMethod: selectedPayment,
+      });
     }
   };
 
@@ -423,17 +370,9 @@ export default function CheckoutScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    {selectedPayment === 'nfc_tap' ? (
-                      <Radio size={20} color="#fff" />
-                    ) : (
-                      <CreditCard size={20} color="#fff" />
-                    )}
+                    <CreditCard size={20} color="#fff" />
                     <Text style={styles.payButtonText}>
-                      {editingSaleId
-                        ? 'Update Checkout'
-                        : selectedPayment === 'nfc_tap'
-                        ? 'Tap to Pay (NFC)'
-                        : 'Pay Now'}
+                      {editingSaleId ? 'Update Checkout' : 'Continue to Payment'}
                     </Text>
                   </>
                 )}
@@ -481,14 +420,6 @@ export default function CheckoutScreen() {
           </View>
         )}
       </View>
-
-      {/* NFC Tap-to-Pay Modal */}
-      <NfcPaymentModal
-        visible={nfcModalVisible}
-        totalAmount={total}
-        onClose={() => setNfcModalVisible(false)}
-        onPaymentSuccess={handleNfcPaymentSuccess}
-      />
     </View>
   );
 }

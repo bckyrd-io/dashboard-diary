@@ -10,9 +10,10 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag, AlertTriangle } from 'lucide-react-native';
+import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag, AlertTriangle } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
+import { ScreenHeader } from '../components/ui';
 
 interface Item {
   id: number;
@@ -113,24 +114,23 @@ export default function ItemDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={Theme.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Item Details</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => (navigation as any).navigate('AddItem', { item })}
-          >
-            <Edit size={20} color={Theme.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
-            <Trash2 size={20} color={Theme.destructive} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Item Details"
+        back={() => navigation.goBack()}
+        action={
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => (navigation as any).navigate('AddItem', { item })}
+            >
+              <Edit size={20} color={Theme.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
+              <Trash2 size={20} color={Theme.destructive} />
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Image */}
@@ -220,17 +220,6 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16, color: Theme.gray500 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.border,
-  },
-  backButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Theme.foreground },
   headerActions: { flexDirection: 'row', gap: 12 },
   headerButton: { padding: 8 },
   content: { paddingBottom: 24 },
