@@ -1,10 +1,24 @@
-// API Service - connects to Next.js backend
-// When running on a physical device via Expo Go, replace with your machine's LAN IP:
-// e.g. http://192.168.1.105:3000
-// When running on Android Emulator: http://10.0.2.2:3000
-// When running on iOS Simulator or Expo Web: http://localhost:3000
+// API Service - connects to the Next.js backend.
+// We prefer an explicit EXPO_PUBLIC_API_URL value, but in Expo Go on a real device the
+// correct backend address is usually the same LAN IP as the dev machine, not localhost.
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+function resolveApiBaseUrl() {
+  const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configured) return configured.replace(/\/$/, '');
+
+  const hostUri = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
+  if (hostUri) {
+    const host = hostUri.split(':').slice(0, -1).join(':') || hostUri;
+    return `http://${host}:3000`;
+  }
+
+  if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
+  return 'http://localhost:3000';
+}
+
+const BASE_URL = resolveApiBaseUrl();
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;

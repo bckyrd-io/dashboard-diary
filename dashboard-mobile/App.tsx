@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Host } from '@expo/ui';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
 import { TransferProvider } from './src/context/TransferContext';
@@ -31,8 +31,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <Host style={{ flex: 1 }} seedColor={Theme.primary}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
         <AuthProvider>
           <CartProvider>
             <TransferProvider>
@@ -42,8 +42,8 @@ export default function App() {
             </TransferProvider>
           </CartProvider>
         </AuthProvider>
-      </Host>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

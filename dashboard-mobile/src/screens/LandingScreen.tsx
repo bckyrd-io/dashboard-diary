@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureImage: { width: '100%', height: '100%' },
+  featureImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   featureIcon: { fontSize: 40 },
   featureTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8, color: Theme.primary },
   featureDescription: { fontSize: 14, color: '#4b5563', lineHeight: 20 },

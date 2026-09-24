@@ -223,8 +223,8 @@ export default function BranchStockScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader
-        title={branchName}
-        description="Select items to transfer to another branch"
+        title="Inventory"
+        description="Items at this branch"
         back={() => navigation.goBack()}
       />
 

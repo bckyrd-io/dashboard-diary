@@ -151,7 +151,7 @@ export function ScreenHeader({
           <ChevronLeft size={26} color={Theme.foreground} />
         </TouchableOpacity>
       ) : null}
-      <View style={{ flex: 1, paddingRight: 12 }}>
+      <View style={[styles.screenHeaderContent, back ? { marginLeft: 8, alignItems: 'flex-start' } : {}]}>
         <Text style={styles.screenTitle}>{title}</Text>
         {description ? (
           <Text style={styles.screenDescription}>{description}</Text>
@@ -232,25 +232,27 @@ const styles = StyleSheet.create({
   screenHeader: {
     paddingHorizontal: 16,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  screenBackBtn: {
-    marginRight: 4,
-    marginTop: -2,
-    padding: 2,
+  screenHeaderContent: {
+    flex: 1,
+    paddingRight: 12,
   },
+  screenBackBtn: { marginRight: 8, padding: 2 },
   screenTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: Theme.gray900,
+    textAlign: 'left',
   },
   screenDescription: {
     fontSize: 13,
     color: Theme.mutedForeground,
     marginTop: 4,
+    textAlign: 'left',
   },
   emptyState: {
     alignItems: 'center',

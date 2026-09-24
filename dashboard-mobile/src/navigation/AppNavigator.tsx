@@ -23,6 +23,7 @@ import ScheduleScreen from '../screens/ScheduleScreen';
 import UsersScreen from '../screens/UsersScreen';
 import AddUserScreen from '../screens/AddUserScreen';
 import StaffScreen from '../screens/StaffScreen';
+import StaffActivityScreen from '../screens/StaffActivityScreen';
 import LoginScreen from '../screens/LoginScreen';
 import LandingScreen from '../screens/LandingScreen';
 import { useAuth } from '../context/AuthContext';
@@ -196,6 +197,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Scanner" component={ScannerScreen} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} />
       <Stack.Screen name="PaymentScreen" component={PaymentScreen} />
+      <Stack.Screen name="StaffActivity" component={StaffActivityScreen} />
     </Stack.Navigator>
   );
 }
