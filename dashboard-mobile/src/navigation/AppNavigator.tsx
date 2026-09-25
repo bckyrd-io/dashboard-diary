@@ -26,6 +26,7 @@ import StaffScreen from '../screens/StaffScreen';
 import StaffActivityScreen from '../screens/StaffActivityScreen';
 import LoginScreen from '../screens/LoginScreen';
 import LandingScreen from '../screens/LandingScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import { useAuth } from '../context/AuthContext';
 import { Theme } from '../constants/Theme';
 import {
@@ -35,6 +36,7 @@ import {
   CreditCard,
   LayoutDashboard,
   LogOut,
+  Settings,
   Tag,
   Users,
   PanelLeft,
@@ -72,6 +74,13 @@ const staffItems: NavItem[] = [
   { name: 'Schedule', label: 'Schedule', component: ScheduleScreen, Icon: CalendarDays },
 ];
 
+const settingsItem: NavItem = {
+  name: 'Settings',
+  label: 'Settings',
+  component: SettingsScreen,
+  Icon: Settings,
+};
+
 function DrawerMenu({
   role,
   logout,
@@ -86,6 +95,7 @@ function DrawerMenu({
   } else {
     items = staffItems;
   }
+  const menuItems = [...items, settingsItem];
 
   return (
     <DrawerContentScrollView
@@ -96,7 +106,7 @@ function DrawerMenu({
         <Text style={styles.drawerTitle}>The Sneaker Lounge</Text>
         <Text style={styles.drawerSub}>Mobile Retail Store Erp</Text>
       </View>
-      {items.map(({ name, label, Icon }) => (
+      {menuItems.map(({ name, label, Icon }) => (
         <DrawerItem
           key={name}
           label={label}
@@ -129,6 +139,7 @@ function StoreDrawer({ role, logout, user }: { role: string; logout: () => void;
   } else {
     items = staffItems;
   }
+  const menuItems = [...items, settingsItem];
 
   return (
     <Drawer.Navigator
@@ -156,7 +167,7 @@ function StoreDrawer({ role, logout, user }: { role: string; logout: () => void;
         drawerItemStyle: { borderRadius: 6, marginHorizontal: 10, marginVertical: 2 },
       })}
     >
-      {items.map(({ name, component: Component, label }) => (
+      {menuItems.map(({ name, component: Component, label }) => (
         <Drawer.Screen
           key={name}
           name={name}

@@ -352,11 +352,6 @@ const styles = StyleSheet.create({
   categoryChipActive: {
     backgroundColor: Theme.primary,
     borderColor: Theme.primary,
-    elevation: 2,
-    shadowColor: Theme.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
   },
   categoryChipText: {
     fontSize: 13,

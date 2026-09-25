@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { Button as ExpoButton, TextInput as ExpoTextInput, Text as ExpoText, Column, Row } from '@expo/ui';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { AlertCircle, Info, ChevronLeft } from 'lucide-react-native';
 import { Theme } from '../../constants/Theme';
 
@@ -84,7 +83,7 @@ export function Input({
   ...props
 }: any) {
   return (
-    <ExpoTextInput
+    <TextInput
       placeholderTextColor={Theme.mutedForeground}
       style={[styles.input, style]}
       {...props}
@@ -135,12 +134,10 @@ export function StatusBadge({ status }: { status: string }) {
 // ── Screen Header ────────────────────────────────────────────────────────────
 export function ScreenHeader({
   title,
-  description,
   action,
   back,
 }: {
   title: string;
-  description?: string;
   action?: React.ReactNode;
   back?: () => void;
 }) {
@@ -153,9 +150,6 @@ export function ScreenHeader({
       ) : null}
       <View style={[styles.screenHeaderContent, back ? { marginLeft: 8, alignItems: 'flex-start' } : {}]}>
         <Text style={styles.screenTitle}>{title}</Text>
-        {description ? (
-          <Text style={styles.screenDescription}>{description}</Text>
-        ) : null}
       </View>
       {action}
     </View>
@@ -196,6 +190,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: Theme.border,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    boxShadow: 'none',
   },
   button: {
     flexDirection: 'row',
@@ -246,12 +246,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Theme.gray900,
-    textAlign: 'left',
-  },
-  screenDescription: {
-    fontSize: 13,
-    color: Theme.mutedForeground,
-    marginTop: 4,
     textAlign: 'left',
   },
   emptyState: {

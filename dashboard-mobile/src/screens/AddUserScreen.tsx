@@ -49,7 +49,6 @@ export default function AddUserScreen() {
     <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="Add New User"
-        description="Create a staff account"
         back={() => navigation.goBack()}
       />
       <View style={styles.content}>

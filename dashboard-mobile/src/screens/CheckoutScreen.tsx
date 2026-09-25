@@ -23,13 +23,12 @@ import {
   Clock,
   DollarSign,
   X,
-  Radio,
 } from 'lucide-react-native';
 import { useCart, CartItem } from '../context/CartContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 
-type PaymentMethod = 'cash' | 'nfc_tap' | 'airtel_money' | 'tnm_mpamba';
+type PaymentMethod = 'cash' | 'airtel_money' | 'tnm_mpamba';
 
 interface SaleEvent {
   id: number;
@@ -53,7 +52,6 @@ export default function CheckoutScreen() {
 
   const paymentMethods: { id: PaymentMethod; label: string; icon: typeof CreditCard }[] = [
     { id: 'cash', label: 'Cash', icon: Banknote },
-    { id: 'nfc_tap', label: 'NFC', icon: Radio },
     { id: 'tnm_mpamba', label: 'Mobile', icon: Smartphone },
   ];
 
@@ -95,7 +93,7 @@ export default function CheckoutScreen() {
           imageUrl: it.itemImage || null,
         }));
         setCart(populatedItems);
-        if (ev.paymentMethod && ['cash', 'nfc_tap', 'airtel_money', 'tnm_mpamba'].includes(ev.paymentMethod)) {
+        if (ev.paymentMethod && ['cash', 'airtel_money', 'tnm_mpamba'].includes(ev.paymentMethod)) {
           setSelectedPayment(ev.paymentMethod as PaymentMethod);
         }
         setEditingSaleId(ev.id);
@@ -225,7 +223,6 @@ export default function CheckoutScreen() {
   const getPaymentMethodLabel = (method: string | null) => {
     switch (method) {
       case 'cash': return 'Cash';
-      case 'nfc_tap': return 'NFC Card Tap';
       case 'airtel_money': return 'Airtel Money';
       case 'tnm_mpamba': return 'TNM Mpamba';
       default: return method || 'N/A';

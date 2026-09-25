@@ -147,7 +147,6 @@ export default function BranchesScreen() {
     <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="Distribution & Branches"
-        description={`${branches.length} store branches`}
         action={
           <Button
             variant="outline"

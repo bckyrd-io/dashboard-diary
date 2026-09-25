@@ -224,7 +224,6 @@ export default function BranchStockScreen() {
     <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="Inventory"
-        description="Items at this branch"
         back={() => navigation.goBack()}
       />
 

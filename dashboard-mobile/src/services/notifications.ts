@@ -1,26 +1,85 @@
 import { Platform } from 'react-native';
 
-type NotificationsModule = typeof import('expo-notifications');
+/**
+ * Local notifications only (Expo Go compatible).
+ *
+ * We intentionally deep-import the local-notification APIs instead of the
+ * package root (`expo-notifications`). The root module registers push-token
+ * auto-registration side effects (`DevicePushTokenAutoRegistration.fx`) which
+ * call `warnOfExpoGoPushUsage()` and THROW on Android inside Expo Go (SDK 53+),
+ * breaking `scheduleNotificationAsync` with "undefined is not a function".
+ *
+ * Local notifications remain fully supported in Expo Go — only remote/push
+ * notifications were removed.
+ */
 
-let modulePromise: Promise<NotificationsModule | null> | null = null;
+type ScheduleRequest = {
+  content: { title: string; body: string; data?: Record<string, any>; sound?: boolean };
+  trigger: { type: 'timeInterval'; seconds: number; repeats?: boolean } | null;
+};
+
+type LocalNotificationsModule = {
+  scheduleNotificationAsync: (request: ScheduleRequest) => Promise<string>;
+  setNotificationHandler: (handler: {
+    handleNotification: () => Promise<{
+      shouldShowAlert?: boolean;
+      shouldPlaySound?: boolean;
+      shouldSetBadge?: boolean;
+      shouldShowBanner?: boolean;
+      shouldShowList?: boolean;
+    }>;
+  }) => void;
+  getPermissionsAsync: () => Promise<{ status: string }>;
+  requestPermissionsAsync: () => Promise<{ status: string }>;
+  setNotificationChannelAsync: (
+    id: string,
+    channel: {
+      name: string;
+      importance: number;
+      vibrationPattern?: number[];
+      lightColor?: string;
+      sound?: string;
+    }
+  ) => Promise<unknown>;
+  cancelAllScheduledNotificationsAsync: () => Promise<void>;
+  AndroidImportance: { MAX: number };
+};
+
+let modulePromise: Promise<LocalNotificationsModule | null> | null = null;
 let handlerConfigured = false;
 let initialized = false;
 
-/**
- * Lazily loads expo-notifications. The module is imported only when a local
- * notification is actually triggered, never at app startup, so its module-level
- * Expo Go / push-token side effects never run on launch.
- */
-function loadNotifications(): Promise<NotificationsModule | null> {
+function loadNotifications(): Promise<LocalNotificationsModule | null> {
   if (!modulePromise) {
-    modulePromise = import('expo-notifications').then(
-      (module) => {
+    modulePromise = (async () => {
+      try {
+        const [scheduler, handler, permissions, channel, cancel, channelTypes] =
+          await Promise.all([
+            import('expo-notifications/build/scheduleNotificationAsync'),
+            import('expo-notifications/build/NotificationsHandler'),
+            import('expo-notifications/build/NotificationPermissions'),
+            import('expo-notifications/build/setNotificationChannelAsync'),
+            import('expo-notifications/build/cancelAllScheduledNotificationsAsync'),
+            import('expo-notifications/build/NotificationChannelManager.types'),
+          ]);
+
+        const module: LocalNotificationsModule = {
+          scheduleNotificationAsync: scheduler.scheduleNotificationAsync as any,
+          setNotificationHandler: handler.setNotificationHandler as any,
+          getPermissionsAsync: permissions.getPermissionsAsync as any,
+          requestPermissionsAsync: permissions.requestPermissionsAsync as any,
+          setNotificationChannelAsync: channel.setNotificationChannelAsync as any,
+          cancelAllScheduledNotificationsAsync:
+            cancel.cancelAllScheduledNotificationsAsync as any,
+          AndroidImportance: channelTypes.AndroidImportance as any,
+        };
+
         configureNotificationHandler(module);
         return module;
-      },
-      () => null
-    );
-    // If the dynamic import fails, allow a retry on the next call.
+      } catch {
+        return null;
+      }
+    })();
     modulePromise.catch(() => {
       modulePromise = null;
     });
@@ -28,16 +87,15 @@ function loadNotifications(): Promise<NotificationsModule | null> {
   return modulePromise;
 }
 
-function configureNotificationHandler(module: NotificationsModule) {
+function configureNotificationHandler(module: LocalNotificationsModule) {
   if (handlerConfigured || Platform.OS === 'web') return;
   try {
     module.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
         shouldShowBanner: true,
         shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
       }),
     });
     handlerConfigured = true;
@@ -46,11 +104,6 @@ function configureNotificationHandler(module: NotificationsModule) {
   }
 }
 
-/**
- * Ensure local notification permissions are granted and the Android channel
- * exists. Runs once, lazily, right before the first notification is sent so
- * permissions are only ever requested when the feature is actually used.
- */
 async function ensureInitialized(): Promise<void> {
   if (initialized || Platform.OS === 'web') return;
 
@@ -104,7 +157,9 @@ export async function sendLocalNotification(
 
   await ensureInitialized();
   const Notifications = await loadNotifications();
-  if (!Notifications) return null;
+  if (!Notifications || typeof Notifications.scheduleNotificationAsync !== 'function') {
+    return null;
+  }
 
   try {
     const id = await Notifications.scheduleNotificationAsync({
@@ -114,11 +169,11 @@ export async function sendLocalNotification(
         data: data || {},
         sound: true,
       },
-      trigger: null, // immediate trigger
+      trigger: null, // immediate local trigger
     });
     return id;
   } catch (error) {
-    console.error('Error sending local notification:', error);
+    console.warn('Local notification not delivered (non-fatal):', error);
     return null;
   }
 }
@@ -143,7 +198,9 @@ export async function scheduleLocalNotification(
 
   await ensureInitialized();
   const Notifications = await loadNotifications();
-  if (!Notifications) return null;
+  if (!Notifications || typeof Notifications.scheduleNotificationAsync !== 'function') {
+    return null;
+  }
 
   try {
     const id = await Notifications.scheduleNotificationAsync({
@@ -154,13 +211,13 @@ export async function scheduleLocalNotification(
         sound: true,
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        type: 'timeInterval',
         seconds: Math.max(1, secondsFromNow),
       },
     });
     return id;
   } catch (error) {
-    console.error('Error scheduling local notification:', error);
+    console.warn('Local notification not scheduled (non-fatal):', error);
     return null;
   }
 }
@@ -174,7 +231,7 @@ export async function cancelAllNotifications(): Promise<void> {
   if (!Notifications) return;
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch (error) {
-    console.error('Error cancelling notifications:', error);
+  } catch {
+    // Non-fatal.
   }
 }

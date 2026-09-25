@@ -55,7 +55,6 @@ export default function UsersScreen() {
     <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="User Management"
-        description={`${users.length} team members`}
         action={
           <Button
             style={{ paddingHorizontal: 12 }}

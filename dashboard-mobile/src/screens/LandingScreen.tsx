@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { HelpCircle, ShoppingBag } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
+import { Button } from '../components/ui';
 
 const SCREENSHOTS: Record<string, ImageSourcePropType> = {
   users: require('../../assets/screenshots/users.png'),
@@ -47,7 +48,7 @@ export default function LandingScreen() {
     screenshot: ImageSourcePropType,
     fallbackEmoji: string
   ) => (
-    <View style={styles.featureCard}>
+    <View style={styles.featureItem}>
       <View style={styles.featureImageWrap}>
         <Image source={screenshot} style={styles.featureImage} resizeMode="cover" />
         {!screenshot ? <Text style={styles.featureIcon}>{fallbackEmoji}</Text> : null}
@@ -74,10 +75,12 @@ export default function LandingScreen() {
           </Text>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
-              <ShoppingBag size={20} color="#fff" />
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-            </TouchableOpacity>
+            <Button onPress={handleGetStarted} style={styles.primaryButton}>
+              <View style={styles.primaryButtonInner}>
+                <ShoppingBag size={20} color="#fff" />
+                <Text style={styles.primaryButtonText}>Get Started</Text>
+              </View>
+            </Button>
 
             <TouchableOpacity style={styles.secondaryButton} onPress={scrollToHelp}>
               <HelpCircle size={20} color={Theme.primary} />
@@ -134,28 +137,22 @@ const styles = StyleSheet.create({
   logoLabel: { fontSize: 24, fontWeight: 'bold', color: Theme.primary },
   description: { fontSize: 16, color: '#4b5563', lineHeight: 24, marginBottom: 32 },
   buttonContainer: { flexDirection: 'row', gap: 12 },
-  primaryButton: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Theme.primary, paddingVertical: 14, paddingHorizontal: 20,
-    borderRadius: Theme.radius, gap: 8,
-  },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryButton: { flex: 1 },
+  primaryButtonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   secondaryButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Theme.background, borderWidth: 2, borderColor: Theme.primary,
-    paddingVertical: 12, paddingHorizontal: 20, borderRadius: Theme.radius, gap: 8,
+    backgroundColor: Theme.background, borderWidth: 1, borderColor: Theme.border,
+    paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, minHeight: 44, gap: 8,
   },
-  secondaryButtonText: { color: Theme.primary, fontSize: 16, fontWeight: '600' },
+  secondaryButtonText: { color: Theme.foreground, fontSize: 15, fontWeight: '600' },
   helpSection: { paddingBottom: 40 },
   sectionTitle: { fontSize: 28, fontWeight: 'bold', marginBottom: 12, color: Theme.foreground },
   sectionDescription: { fontSize: 16, color: '#4b5563', lineHeight: 24, marginBottom: 32 },
   featureSection: { marginBottom: 32 },
   subsectionTitle: { fontSize: 20, fontWeight: '600', marginBottom: 12, color: Theme.primary },
   subsectionDescription: { fontSize: 15, color: '#4b5563', lineHeight: 22, marginBottom: 20 },
-  featureCard: {
-    backgroundColor: Theme.muted, borderRadius: Theme.radius, padding: 16,
-    marginBottom: 16, borderWidth: 1, borderColor: Theme.border,
-  },
+  featureItem: { marginBottom: 20 },
   featureImageWrap: {
     width: '100%',
     height: 180,

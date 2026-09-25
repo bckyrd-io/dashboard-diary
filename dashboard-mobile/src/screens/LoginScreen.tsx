@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Theme.background, borderRadius: Theme.radius,
     borderWidth: 1, borderColor: Theme.border, padding: 24,
-    ...Theme.shadowSm,
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
   input: {

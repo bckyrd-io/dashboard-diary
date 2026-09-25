@@ -118,7 +118,6 @@ export default function ScheduleScreen() {
       <View style={{ paddingBottom: 4 }}>
         <ScreenHeader
           title="Schedule"
-          description={`${events.length} upcoming events`}
         />
       </View>
 

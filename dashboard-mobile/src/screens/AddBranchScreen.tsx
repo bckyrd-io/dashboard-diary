@@ -35,7 +35,6 @@ export default function AddBranchScreen() {
     <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="New Branch"
-        description="Add a farm location"
         back={() => navigation.goBack()}
       />
       <View style={styles.form}>

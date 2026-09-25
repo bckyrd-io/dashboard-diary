@@ -84,14 +84,8 @@ export default function StaffScreen() {
     setError(null);
     try {
       // Try reading product tag first (workstation tag)
-      let result = await nfcService.readProductTag();
-      if (!result || !result.success) {
-        // Fallback to simulated card read
-        const sim = await nfcService.simulateCardPayment(0);
-        result = { success: sim.success, tagId: sim.tagId } as any;
-      }
-
-      if (!result.success) throw new Error(result.error || 'No tag read');
+      const result = await nfcService.readProductTag();
+      if (!result || !result.success) throw new Error(result?.error || 'No tag read');
 
       const tagId: string = result.tagId ?? `TAG-${Date.now().toString(36).toUpperCase()}`;
 
@@ -159,7 +153,7 @@ export default function StaffScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-        <ScreenHeader title="NFC Staff Accountability" description="See who is at each workstation and tap to scan NFC" />
+        <ScreenHeader title="NFC Staff Accountability" />
       </View>
 
       <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>

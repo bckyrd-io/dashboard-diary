@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,29 +7,18 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Animated,
-  Easing,
   Platform,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import {
-  CreditCard,
-  Smartphone,
-  Banknote,
-  Radio,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-} from 'lucide-react-native';
+import { CreditCard, Smartphone, Banknote, CheckCircle2 } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader, Card } from '../components/ui';
-import { nfcService, NfcPaymentResult } from '../services/nfcService';
 
-type PaymentMethod = 'cash' | 'nfc_tap' | 'airtel_money' | 'tnm_mpamba';
+type PaymentMethod = 'cash' | 'airtel_money' | 'tnm_mpamba';
 
 interface PaymentItem {
   itemId: number;
@@ -44,18 +33,14 @@ interface PaymentParams {
   paymentMethod: PaymentMethod;
 }
 
-type NfcState = 'scanning' | 'processing' | 'error';
-
 const methodLabels: Record<PaymentMethod, string> = {
   cash: 'Cash',
-  nfc_tap: 'NFC Card Tap',
   airtel_money: 'Airtel Money',
   tnm_mpamba: 'TNM Mpamba',
 };
 
 const methodIcons: Record<PaymentMethod, typeof CreditCard> = {
   cash: Banknote,
-  nfc_tap: Radio,
   airtel_money: Smartphone,
   tnm_mpamba: Smartphone,
 };
@@ -72,86 +57,9 @@ export default function PaymentScreen() {
   const [phoneError, setPhoneError] = useState('');
   const [paying, setPaying] = useState(false);
   const [paidResult, setPaidResult] = useState<{ reference: string | null; amount: number } | null>(null);
-  const [nfcState, setNfcState] = useState<NfcState | null>(paymentMethod === 'nfc_tap' ? 'scanning' : null);
-  const [nfcError, setNfcError] = useState('');
-  const [hasHardware, setHasHardware] = useState(false);
-  const [paymentResult, setPaymentResult] = useState<NfcPaymentResult | null>(null);
 
   const isMobileMoney = paymentMethod === 'tnm_mpamba' || paymentMethod === 'airtel_money';
-  const isNfc = paymentMethod === 'nfc_tap';
   const MethodIcon = methodIcons[paymentMethod];
-
-  // Radar pulse animations (inline NFC — no modal)
-  const pulseAnim1 = useRef(new Animated.Value(1)).current;
-  const pulseAnim2 = useRef(new Animated.Value(1)).current;
-  const pulseOpacity1 = useRef(new Animated.Value(0.8)).current;
-  const pulseOpacity2 = useRef(new Animated.Value(0.5)).current;
-
-  useEffect(() => {
-    let anim: Animated.CompositeAnimation | undefined;
-    if (isNfc && nfcState === 'scanning' && !paidResult) {
-      anim = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(pulseAnim1, { toValue: 1.6, duration: 1500, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-            Animated.timing(pulseAnim1, { toValue: 1, duration: 0, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.timing(pulseOpacity1, { toValue: 0, duration: 1500, useNativeDriver: true }),
-            Animated.timing(pulseOpacity1, { toValue: 0.8, duration: 0, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.delay(400),
-            Animated.timing(pulseAnim2, { toValue: 1.9, duration: 1500, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-            Animated.timing(pulseAnim2, { toValue: 1, duration: 0, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.delay(400),
-            Animated.timing(pulseOpacity2, { toValue: 0, duration: 1500, useNativeDriver: true }),
-            Animated.timing(pulseOpacity2, { toValue: 0.5, duration: 0, useNativeDriver: true }),
-          ]),
-        ])
-      );
-      anim.start();
-    }
-    return () => {
-      if (anim) anim.stop();
-    };
-  }, [isNfc, nfcState, paidResult]);
-
-  const startNfcWorkflow = useCallback(async () => {
-    setNfcState('scanning');
-    setNfcError('');
-    setPaymentResult(null);
-    const supported = await nfcService.isSupported();
-    setHasHardware(supported);
-
-    if (supported) {
-      nfcService
-        .startCardPayment(total)
-        .then((res) => {
-          if (res.success) {
-            handleCardSuccess(res);
-          } else if (res.error && !res.error.includes('cancelled')) {
-            setNfcError(res.error);
-            setNfcState('error');
-          }
-        })
-        .catch((err: any) => {
-          setNfcError(err?.message || 'NFC read failed');
-          setNfcState('error');
-        });
-    }
-  }, [total]);
-
-  useEffect(() => {
-    if (isNfc && !paidResult) {
-      startNfcWorkflow();
-    }
-    return () => {
-      nfcService.cancelSession();
-    };
-  }, []);
 
   const formatPrice = (price: number) => `MWK ${price.toLocaleString()}`;
 
@@ -185,26 +93,6 @@ export default function PaymentScreen() {
     }
   };
 
-  const handleCardSuccess = (res: NfcPaymentResult) => {
-    setNfcState('processing');
-    setTimeout(async () => {
-      setPaymentResult(res);
-      const cardInfo = `${res.cardBrand || 'NFC Contactless'} (•••• ${res.lastFour})`;
-      await processPayment(res.reference, `Sale - ${items.length} item(s) [${cardInfo}]`);
-    }, 800);
-  };
-
-  const handleSimulatedTap = async (brand: 'Visa Contactless' | 'Mastercard Contactless') => {
-    setNfcState('processing');
-    try {
-      const res = await nfcService.simulateCardPayment(total, brand);
-      handleCardSuccess(res);
-    } catch (e: any) {
-      setNfcError(e?.message || 'Simulation failed');
-      setNfcState('error');
-    }
-  };
-
   const validatePhone = (value: string) => {
     const digits = value.replace(/\s/g, '');
     if (!digits) {
@@ -227,8 +115,6 @@ export default function PaymentScreen() {
         `MOMO-${digits}`,
         `Sale - ${items.length} item(s) [${methodLabels[paymentMethod]} ${digits}]`
       );
-    } else if (isNfc) {
-      // NFC pays via tap flow above
     } else {
       processPayment();
     }
@@ -263,11 +149,7 @@ export default function PaymentScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title="Payment"
-        description={`${items.length} item${items.length === 1 ? '' : 's'} • ${methodLabels[paymentMethod]}`}
-        back={() => navigation.goBack()}
-      />
+      <ScreenHeader title="Payment" back={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Order Summary — pre-filled */}
@@ -279,11 +161,7 @@ export default function PaymentScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.methodLabel}>{methodLabels[paymentMethod]}</Text>
               <Text style={styles.methodHint}>
-                {isNfc
-                  ? 'Contactless card or phone'
-                  : isMobileMoney
-                  ? 'Mobile money transfer'
-                  : 'Cash payment'}
+                {isMobileMoney ? 'Mobile money transfer' : 'Cash payment'}
               </Text>
             </View>
           </View>
@@ -334,79 +212,6 @@ export default function PaymentScreen() {
           </Card>
         )}
 
-        {/* NFC inline tap-to-pay */}
-        {isNfc && (
-          <Card style={styles.nfcCard}>
-            {nfcState === 'scanning' && (
-              <View style={styles.nfcCenter}>
-                <View style={styles.radarWrapper}>
-                  <Animated.View
-                    style={[styles.pulseCircle, { transform: [{ scale: pulseAnim2 }], opacity: pulseOpacity2 }]}
-                  />
-                  <Animated.View
-                    style={[styles.pulseCircle, { transform: [{ scale: pulseAnim1 }], opacity: pulseOpacity1 }]}
-                  />
-                  <View style={styles.deviceIconCircle}>
-                    <Smartphone size={40} color="#ffffff" />
-                  </View>
-                </View>
-                <Text style={styles.nfcTitle}>Ready for Contactless Tap</Text>
-                <Text style={styles.nfcSubtitle}>
-                  Hold the customer's card or phone against the back of this device
-                </Text>
-
-                <View style={styles.simulatorBox}>
-                  <View style={styles.simulatorHeader}>
-                    <Sparkles size={14} color={Theme.primary} />
-                    <Text style={styles.simulatorLabel}>
-                      {hasHardware ? 'Or Test with Simulator:' : 'Hardware not detected. Test Tap:'}
-                    </Text>
-                  </View>
-                  <View style={styles.simButtonsRow}>
-                    <TouchableOpacity style={styles.simBtn} onPress={() => handleSimulatedTap('Visa Contactless')}>
-                      <CreditCard size={14} color="#1E3A8A" />
-                      <Text style={styles.simBtnText}>Tap Visa</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.simBtn, styles.simBtnMastercard]}
-                      onPress={() => handleSimulatedTap('Mastercard Contactless')}
-                    >
-                      <CreditCard size={14} color="#C2410C" />
-                      <Text style={[styles.simBtnText, { color: '#C2410C' }]}>Tap Mastercard</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {nfcState === 'processing' && (
-              <View style={styles.nfcCenter}>
-                <ActivityIndicator size="large" color={Theme.primary} />
-                <Text style={styles.nfcTitle}>Authorizing Payment...</Text>
-                <Text style={styles.nfcSubtitle}>
-                  {paymentResult
-                    ? `${paymentResult.cardBrand || 'Contactless Card'} •••• ${paymentResult.lastFour}`
-                    : 'Verifying card with POS terminal'}
-                </Text>
-                {paymentResult?.isSimulated ? <Text style={styles.simulatedBadge}>Test Mode</Text> : null}
-              </View>
-            )}
-
-            {nfcState === 'error' && (
-              <View style={styles.nfcCenter}>
-                <View style={styles.errorIconCircle}>
-                  <AlertCircle size={44} color="#dc2626" />
-                </View>
-                <Text style={styles.nfcErrorTitle}>Card Read Failed</Text>
-                <Text style={styles.nfcSubtitle}>{nfcError || 'Could not communicate with contactless card.'}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={startNfcWorkflow}>
-                  <Text style={styles.retryBtnText}>Try Again</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Card>
-        )}
-
         {/* Cash hint */}
         {paymentMethod === 'cash' && (
           <Card style={styles.cashCard}>
@@ -417,29 +222,23 @@ export default function PaymentScreen() {
           </Card>
         )}
 
-        {/* Pay button (cash / mobile money) */}
-        {!isNfc && (
-          <TouchableOpacity
-            style={[styles.payButton, (paying || items.length === 0) && styles.payButtonDisabled]}
-            onPress={handlePay}
-            disabled={paying || items.length === 0}
-          >
-            {paying ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <CreditCard size={20} color="#fff" />
-                <Text style={styles.payButtonText}>Pay with PayChangu</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+        {/* Pay button */}
+        <TouchableOpacity
+          style={[styles.payButton, (paying || items.length === 0) && styles.payButtonDisabled]}
+          onPress={handlePay}
+          disabled={paying || items.length === 0}
+        >
+          {paying ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <CreditCard size={20} color="#fff" />
+              <Text style={styles.payButtonText}>Pay with PayChangu</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
-        <Text style={styles.secureNote}>
-          {isNfc
-            ? 'Payment is processed when the card is tapped.'
-            : 'You will not be charged until you tap the pay button.'}
-        </Text>
+        <Text style={styles.secureNote}>You will not be charged until you tap the pay button.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -499,104 +298,6 @@ const styles = StyleSheet.create({
     color: Theme.foreground,
   },
   errorText: { fontSize: 12, color: Theme.destructive, marginTop: 6 },
-  nfcCard: { marginBottom: 14, paddingVertical: 24 },
-  nfcCenter: { alignItems: 'center' },
-  radarWrapper: {
-    width: 120,
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  pulseCircle: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#BBF7D0',
-  },
-  deviceIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Theme.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-  },
-  nfcTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Theme.foreground,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  nfcSubtitle: {
-    fontSize: 13,
-    color: Theme.mutedForeground,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  nfcErrorTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#dc2626',
-    marginTop: 12,
-  },
-  simulatorBox: {
-    marginTop: 20,
-    width: '100%',
-    padding: 12,
-    backgroundColor: Theme.muted,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Theme.border,
-  },
-  simulatorHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  simulatorLabel: { fontSize: 12, fontWeight: '600', color: Theme.gray700 },
-  simButtonsRow: { flexDirection: 'row', gap: 10 },
-  simBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    backgroundColor: '#DBEAFE',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#93C5FD',
-  },
-  simBtnMastercard: { backgroundColor: '#FFEDD5', borderColor: '#FDBA74' },
-  simBtnText: { fontSize: 12, fontWeight: '600', color: '#1E3A8A' },
-  simulatedBadge: {
-    marginTop: 10,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#15803D',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    textTransform: 'uppercase',
-  },
-  errorIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  retryBtn: {
-    marginTop: 18,
-    backgroundColor: Theme.primary,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryBtnText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
   cashCard: {
     flexDirection: 'row',
     alignItems: 'center',

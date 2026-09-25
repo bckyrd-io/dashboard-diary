@@ -134,7 +134,7 @@ export default function DashboardScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.primary} />
         }
       >
-        <ScreenHeader title="Analytics" description="Overview of your operations" />
+        <ScreenHeader title="Analytics" />
 
         {error ? (
           <Card style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca', marginBottom: 16 }}>
