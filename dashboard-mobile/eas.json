@@ -9,7 +9,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR-BACKEND-URL.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://next-type-bckyrd-project.vercel.app"
       }
     },
     "production": {
@@ -18,7 +18,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR-BACKEND-URL.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://next-type-bckyrd-project.vercel.app"
       }
     }
   }
