@@ -22,7 +22,23 @@
         "android.permission.NFC"
       ]
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "This app needs photo library access to select product images.",
+          "cameraPermission": "This app needs camera access to take product photos and scan barcodes."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs camera access to scan barcodes and take product photos."
+        }
+      ],
+      "expo-sqlite",
+      "expo-sharing"
+    ],
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"

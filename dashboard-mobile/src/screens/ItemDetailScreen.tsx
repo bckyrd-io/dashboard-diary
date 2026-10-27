@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag, AlertTriangle } from 'lucide-react-native';
@@ -36,6 +37,8 @@ interface Item {
 export default function ItemDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const { itemId } = route.params as { itemId: number };
 
   const [item, setItem] = useState<Item | null>(null);
@@ -133,80 +136,82 @@ export default function ItemDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Image */}
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Package size={64} color={Theme.gray300} />
-          </View>
-        )}
+        <View style={{ width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }}>
+          {/* Image */}
+          {item.imageUrl ? (
+            <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Package size={64} color={Theme.gray300} />
+            </View>
+          )}
 
-        {/* Name and Price */}
-        <View style={styles.titleSection}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
-          <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg }]}>
-            <Text style={[styles.stockText, { color: stockStatus.color }]}>
-              {stockStatus.label} ({item.quantity} {item.unit || 'units'})
-            </Text>
-          </View>
-        </View>
-
-        {/* Details */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Product Information</Text>
-
-          <View style={styles.detailRow}>
-            <Tag size={18} color={Theme.gray500} />
-            <Text style={styles.detailLabel}>Category</Text>
-            <Text style={styles.detailValue}>{item.subCategory || item.category}</Text>
+          {/* Name and Price */}
+          <View style={styles.titleSection}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
+            <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg }]}>
+              <Text style={[styles.stockText, { color: stockStatus.color }]}>
+                {stockStatus.label} ({item.quantity} {item.unit || 'units'})
+              </Text>
+            </View>
           </View>
 
-          {item.barcode && (
-            <View style={styles.detailRow}>
-              <Barcode size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Barcode</Text>
-              <Text style={styles.detailValue}>{item.barcode}</Text>
-            </View>
-          )}
+          {/* Details */}
+          <View style={styles.detailsCard}>
+            <Text style={styles.sectionTitle}>Product Information</Text>
 
-          {item.sku && (
             <View style={styles.detailRow}>
-              <Hash size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>SKU</Text>
-              <Text style={styles.detailValue}>{item.sku}</Text>
+              <Tag size={18} color={Theme.gray500} />
+              <Text style={styles.detailLabel}>Category</Text>
+              <Text style={styles.detailValue}>{item.subCategory || item.category}</Text>
             </View>
-          )}
 
-          {item.costPrice && (
-            <View style={styles.detailRow}>
-              <DollarSign size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Cost Price</Text>
-              <Text style={styles.detailValue}>{formatPrice(item.costPrice)}</Text>
-            </View>
-          )}
+            {item.barcode && (
+              <View style={styles.detailRow}>
+                <Barcode size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Barcode</Text>
+                <Text style={styles.detailValue}>{item.barcode}</Text>
+              </View>
+            )}
 
-          {item.reorderThreshold && (
-            <View style={styles.detailRow}>
-              <AlertTriangle size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Reorder At</Text>
-              <Text style={styles.detailValue}>{item.reorderThreshold} units</Text>
-            </View>
-          )}
-        </View>
+            {item.sku && (
+              <View style={styles.detailRow}>
+                <Hash size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>SKU</Text>
+                <Text style={styles.detailValue}>{item.sku}</Text>
+              </View>
+            )}
 
-        {/* Stock Info */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Stock Information</Text>
-          <View style={styles.stockInfo}>
-            <View style={styles.stockStat}>
-              <Text style={styles.stockStatValue}>{item.quantity}</Text>
-              <Text style={styles.stockStatLabel}>Current Stock</Text>
-            </View>
-            <View style={styles.stockStat}>
-              <Text style={styles.stockStatValue}>{item.reorderThreshold || 'N/A'}</Text>
-              <Text style={styles.stockStatLabel}>Reorder Point</Text>
+            {item.costPrice && (
+              <View style={styles.detailRow}>
+                <DollarSign size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Cost Price</Text>
+                <Text style={styles.detailValue}>{formatPrice(item.costPrice)}</Text>
+              </View>
+            )}
+
+            {item.reorderThreshold && (
+              <View style={styles.detailRow}>
+                <AlertTriangle size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Reorder At</Text>
+                <Text style={styles.detailValue}>{item.reorderThreshold} units</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Stock Info */}
+          <View style={styles.detailsCard}>
+            <Text style={styles.sectionTitle}>Stock Information</Text>
+            <View style={styles.stockInfo}>
+              <View style={styles.stockStat}>
+                <Text style={styles.stockStatValue}>{item.quantity}</Text>
+                <Text style={styles.stockStatLabel}>Current Stock</Text>
+              </View>
+              <View style={styles.stockStat}>
+                <Text style={styles.stockStatValue}>{item.reorderThreshold || 'N/A'}</Text>
+                <Text style={styles.stockStatLabel}>Reorder Point</Text>
+              </View>
             </View>
           </View>
         </View>

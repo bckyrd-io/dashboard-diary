@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Alert, Text, TouchableOpacity, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../services/api';
@@ -8,6 +8,8 @@ import { Theme } from '../constants/Theme';
 
 export default function AddBranchScreen() {
   const navigation = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function AddBranchScreen() {
         title="New Branch"
         back={() => navigation.goBack()}
       />
-      <View style={styles.form}>
+      <View style={[styles.form, { width: isDesktopOrTablet ? '70%' : undefined, alignSelf: isDesktopOrTablet ? 'center' : 'stretch' }]}>
         <Text style={styles.label}>Branch name</Text>
         <Input value={name} onChangeText={setName} placeholder="e.g. North Farm" style={{ marginBottom: 16 }} />
         <Text style={styles.label}>Location</Text>
@@ -53,8 +55,12 @@ export default function AddBranchScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.muted },
   form: {
-    marginHorizontal: 16, backgroundColor: Theme.background,
-    borderWidth: 1, borderColor: Theme.border, borderRadius: Theme.radius, padding: 16,
+    marginHorizontal: 16,
+    backgroundColor: Theme.background,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    borderRadius: Theme.radius,
+    padding: 16,
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
 });

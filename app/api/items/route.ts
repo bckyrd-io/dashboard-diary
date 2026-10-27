@@ -39,9 +39,23 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { name, category, subCategory, barcode, sku, price, costPrice, quantity, unit, reorderThreshold, imageUrl, branchId } = body;
+  const { name, category, subCategory, barcode, sku, price, costPrice, quantity, unit, reorderThreshold, imageUrl, branchId, clientOpId } = body;
 
   try {
+    // Offline replay idempotency: return the previously created row instead of
+    // creating a duplicate when the same client operation is retried.
+    if (clientOpId) {
+      const existing = await db
+        .select()
+        .from(itemsTable)
+        .where(eq(itemsTable.clientOpId, String(clientOpId)))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return NextResponse.json({ success: true, item: existing[0], duplicate: true });
+      }
+    }
+
     const newItem = await db
       .insert(itemsTable)
       .values({
@@ -57,6 +71,7 @@ export async function POST(req: Request) {
         reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined,
         imageUrl,
         branchId: branchId ? Number(branchId) : undefined,
+        clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();
 

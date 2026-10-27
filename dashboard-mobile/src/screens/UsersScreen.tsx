@@ -13,6 +13,7 @@ import { Mail, UserPlus, Users as UsersIcon } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Badge, Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
+import { useAuth } from '../context/AuthContext';
 
 interface User {
   id: number;
@@ -24,6 +25,8 @@ interface User {
 
 export default function UsersScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +34,9 @@ export default function UsersScreen() {
 
   const fetchUsers = async () => {
     try {
-      const result = await api.get<{ users: User[] }>('/api/users');
+      // Server scopes the list by role: non-admins only ever receive their own row
+      const qs = user?.id ? `?userId=${user.id}` : '';
+      const result = await api.get<{ users: User[] }>(`/api/users${qs}`);
       setUsers(result.users ?? []);
       setError('');
     } catch (err: any) {
@@ -42,7 +47,7 @@ export default function UsersScreen() {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); }, [user?.id]);
 
   if (loading)
     return (
@@ -56,15 +61,17 @@ export default function UsersScreen() {
       <ScreenHeader
         title="User Management"
         action={
-          <Button
-            style={{ paddingHorizontal: 12 }}
-            onPress={() => navigation.navigate('AddUser' as never)}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <UserPlus size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 4 }}>Add</Text>
-            </View>
-          </Button>
+          isAdmin ? (
+            <Button
+              style={{ paddingHorizontal: 12 }}
+              onPress={() => navigation.navigate('AddUser' as never)}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <UserPlus size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 4 }}>Add</Text>
+              </View>
+            </Button>
+          ) : undefined
         }
       />
       {error ? <ErrorState message={error} /> : null}

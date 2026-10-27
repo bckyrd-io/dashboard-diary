@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { Search, Plus, CheckCircle2, X } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { ScreenHeader, Card, EmptyState, Button, StatusBadge } from '../componen
 import { Theme } from '../constants/Theme';
 import { getEmployeeById, getCheckInsForStaff, getSalesForStaff } from '../services/staffData';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 type ParamList = { StaffActivity: { staffId: number } };
 
@@ -27,7 +28,10 @@ type AssignmentRow = {
 export default function StaffActivityScreen() {
   const route = useRoute<RouteProp<ParamList, 'StaffActivity'>>();
   const navigation: any = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const { staffId } = route.params;
+  const { user } = useAuth();
 
   const [employee, setEmployee] = React.useState<any | null>(null);
   const [checkIns, setCheckIns] = React.useState<any[]>([]);
@@ -61,10 +65,13 @@ export default function StaffActivityScreen() {
     let mounted = true;
     (async () => {
       try {
+        // userId scopes the response server-side: admins receive the full list,
+        // staff/cashier only their own row (enough to resolve their own record)
+        const usersQs = user?.id ? `?userId=${user.id}` : '';
         const [activitiesRes, itemsRes, usersRes] = await Promise.all([
           api.get<{ success: boolean; activities: any[] }>('/api/activities').catch(() => ({ success: false, activities: [] } as any)),
           api.get<{ success: boolean; items: any[] }>('/api/items').catch(() => ({ success: false, items: [] } as any)),
-          api.get<{ success: boolean; users: any[] }>('/api/users').catch(() => ({ success: false, users: [] } as any)),
+          api.get<{ success: boolean; users: any[] }>(`/api/users${usersQs}`).catch(() => ({ success: false, users: [] } as any)),
         ]);
         if (!mounted) return;
 
@@ -102,10 +109,10 @@ export default function StaffActivityScreen() {
           });
         }
 
-        const user = (usersRes.users || []).find(
+        const matchedUser = (usersRes.users || []).find(
           (u: any) => u.username === employee?.username && u.role === 'Staff'
         ) ?? (usersRes.users || []).find((u: any) => u.username === employee?.username);
-        if (user?.id) setResolvedUserId(user.id);
+        if (matchedUser?.id) setResolvedUserId(matchedUser.id);
 
         setOptions(Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label)));
       } catch {
@@ -113,7 +120,7 @@ export default function StaffActivityScreen() {
       }
     })();
     return () => { mounted = false; };
-  }, [employee?.username]);
+  }, [employee?.username, user?.id]);
 
   const fetchAssignments = React.useCallback(async (userId: number) => {
     setAssignmentsLoading(true);
@@ -305,12 +312,11 @@ export default function StaffActivityScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Theme.muted }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-        <ScreenHeader title={'Staff Activity'} back={() => navigation.goBack()} />
-      </View>
+      <ScreenHeader title={'Staff Activity'} back={() => navigation.goBack()} />
 
       <FlatList
         data={timeline}
+        style={{ width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }}
         keyExtractor={(item, idx) => `${item.type}-${idx}-${item.time}`}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
         ListHeaderComponent={

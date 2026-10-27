@@ -3,8 +3,17 @@ import { schedulesTable, eventsTable } from '../../../drizzle/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const { searchParams } = new URL(req.url);
+        const raw = searchParams.get('raw') === 'true';
+
+        if (raw) {
+            // Raw rows for the mobile offline mirror/backup.
+            const schedules = await db.select().from(schedulesTable);
+            return NextResponse.json({ success: true, schedules });
+        }
+
         const schedules = await db
             .select({
                 scheduleId: schedulesTable.id,

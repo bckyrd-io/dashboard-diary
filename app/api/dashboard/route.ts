@@ -9,10 +9,43 @@ import {
   schedulesTable,
   usersTable,
 } from '../../../drizzle/db/schema';
-import { sql } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 
-export async function GET() {
+// Determines whether the requesting user may see ALL dashboard data.
+// Admins see everything; staff/cashier users only see the activities they are
+// assigned to (rows in the performance table linking that user to an event).
+// The role is looked up server-side from the DB so the client cannot fake it.
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    let eventsCondition = sql`TRUE`;
+    let isAdmin = true;
+
+    if (userId) {
+      const user = await db
+        .select({ role: usersTable.role })
+        .from(usersTable)
+        .where(eq(usersTable.id, Number(userId)))
+        .limit(1);
+
+      if (user.length > 0) {
+        isAdmin = user[0].role.trim().toLowerCase() === 'admin';
+      } else {
+        // Unknown user id: treat as fully restricted rather than leaking data
+        isAdmin = false;
+      }
+
+      if (!isAdmin) {
+        // Only events that have a performance row for this user ("data about them")
+        eventsCondition = sql`${eventsTable.id} IN (
+          SELECT ${performanceTable.activityId}
+          FROM ${performanceTable}
+          WHERE ${performanceTable.userId} = ${Number(userId)}
+        )`;
+      }
+    }
     // Fetch aggregated activity data grouped by financial_type (Revenue/Expense/Neutral)
     const activitiesByType = await db
       .select({
@@ -21,7 +54,7 @@ export async function GET() {
         activities: sql<string>`COALESCE(STRING_AGG(${eventsTable.description}, ', '), '')`,
       })
       .from(eventsTable)
-      .where(sql`LOWER(${eventsTable.financialType}) != 'neutral'`)
+      .where(and(eventsCondition, sql`LOWER(${eventsTable.financialType}) != 'neutral'`))
       .groupBy(eventsTable.financialType);
 
     // Fetch detailed activity list
@@ -60,6 +93,7 @@ export async function GET() {
       .leftJoin(usersTable, sql`${usersTable.id} = ${performanceTable.userId}`)
       .leftJoin(branchesTable, sql`${branchesTable.id} = ${usersTable.branchId}`)
       .leftJoin(schedulesTable, sql`${schedulesTable.activityId} = ${eventsTable.id}`)
+      .where(eventsCondition)
       .groupBy(
         eventsTable.id,
         eventsTable.financialType,

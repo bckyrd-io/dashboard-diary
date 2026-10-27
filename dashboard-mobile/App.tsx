@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { OfflineProvider } from './src/context/OfflineContext';
 import { CartProvider } from './src/context/CartContext';
 import { TransferProvider } from './src/context/TransferContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -34,13 +35,15 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <CartProvider>
-            <TransferProvider>
-              <NavigationContainer>
-                <AppContent />
-              </NavigationContainer>
-            </TransferProvider>
-          </CartProvider>
+          <OfflineProvider>
+            <CartProvider>
+              <TransferProvider>
+                <NavigationContainer>
+                  <AppContent />
+                </NavigationContainer>
+              </TransferProvider>
+            </CartProvider>
+          </OfflineProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

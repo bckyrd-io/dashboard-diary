@@ -68,6 +68,25 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
+        // Offline replay idempotency: the same assignment may be retried.
+        const existing = await db
+            .select()
+            .from(performanceTable)
+            .where(
+                and(
+                    eq(performanceTable.userId, Number(body.userId)),
+                    eq(performanceTable.activityId, Number(body.activityId))
+                )
+            )
+            .limit(1);
+
+        if (existing.length > 0) {
+            return NextResponse.json(
+                { success: true, performance: existing, duplicate: true },
+                { status: 200 }
+            );
+        }
+
         const newPerformance = await db.insert(performanceTable).values({
             userId: Number(body.userId),
             activityId: Number(body.activityId),

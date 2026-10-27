@@ -8,12 +8,19 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { Theme } from '../constants/Theme';
+import { ScreenHeader } from '../components/ui';
 
 export default function LoginScreen() {
+  const navigation = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,17 +46,14 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScreenHeader title="Sign In" back={() => navigation.goBack()} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        <View style={styles.centered}>
+        <View style={[styles.centered, { width: isDesktopOrTablet ? '70%' : '100%' }]}>
           {/* Logo / Brand */}
           <View style={styles.logoSection}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoEmoji}>👟</Text>
-            </View>
-            <Text style={styles.appName}>The Sneaker Lounge</Text>
             <Text style={styles.subtitle}>Sign in to your account</Text>
           </View>
 
@@ -78,7 +82,11 @@ export default function LoginScreen() {
                 style={styles.passwordInput}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Text style={styles.eyeEmoji}>{showPassword ? '🙈' : '👁️'}</Text>
+                {showPassword ? (
+                  <EyeOff size={18} color={Theme.mutedForeground} />
+                ) : (
+                  <Eye size={18} color={Theme.mutedForeground} />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -113,7 +121,12 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.background },
   flex: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+  },
   logoSection: { alignItems: 'center', marginBottom: 40 },
   logoBox: {
     width: 80, height: 80, backgroundColor: Theme.primary,
@@ -123,8 +136,12 @@ const styles = StyleSheet.create({
   appName: { fontSize: 28, fontWeight: 'bold', color: Theme.foreground },
   subtitle: { color: Theme.mutedForeground, marginTop: 4, fontSize: 15 },
   card: {
-    backgroundColor: Theme.background, borderRadius: Theme.radius,
-    borderWidth: 1, borderColor: Theme.border, padding: 24,
+    backgroundColor: Theme.background,
+    borderRadius: Theme.radius,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    padding: 24,
+    width: '100%',
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
   input: {
@@ -141,7 +158,7 @@ const styles = StyleSheet.create({
     color: Theme.foreground, fontSize: 15,
   },
   eyeBtn: { paddingHorizontal: 12 },
-  eyeEmoji: { fontSize: 18, color: Theme.mutedForeground },
+  eyeEmoji: { fontSize: 15, color: Theme.mutedForeground },
   errorText: { color: Theme.destructive, fontSize: 13, marginBottom: 12, textAlign: 'center' },
   submitBtn: {
     backgroundColor: Theme.primary, paddingVertical: 16,

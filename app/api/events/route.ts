@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const branchId = searchParams.get('branch_id');
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
+    const includeItems = searchParams.get('includeItems') === 'true';
 
     const conditions: SQL[] = [];
 
@@ -28,6 +29,13 @@ export async function GET(req: Request) {
     const events = conditions.length > 0
       ? await db.select().from(eventsTable).where(and(...conditions))
       : await db.select().from(eventsTable);
+
+    // Offline sync/backup pulls need the line items for sales/transfers in a
+    // single request. Default response shape is unchanged.
+    if (includeItems) {
+      const eventItems = await db.select().from(eventItemsTable);
+      return NextResponse.json({ success: true, events, eventItems });
+    }
 
     return NextResponse.json({ success: true, events });
   } catch (error) {
@@ -52,9 +60,23 @@ export async function POST(req: Request) {
     isRecurring,
     recurrenceRule,
     items,
+    clientOpId,
   } = body;
 
   try {
+    // Offline replay idempotency
+    if (clientOpId) {
+      const existingEvent = await db
+        .select()
+        .from(eventsTable)
+        .where(eq(eventsTable.clientOpId, String(clientOpId)))
+        .limit(1);
+
+      if (existingEvent.length > 0) {
+        return NextResponse.json({ success: true, event: existingEvent[0], duplicate: true });
+      }
+    }
+
     // If it's a transfer, validate branches
     if (eventType === 'transfer') {
       if (!branchId || !toBranchId) {
@@ -86,6 +108,7 @@ export async function POST(req: Request) {
         paymentStatus: paymentStatus || 'success',
         isRecurring: isRecurring || false,
         recurrenceRule,
+        clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();
 

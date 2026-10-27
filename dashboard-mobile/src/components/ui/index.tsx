@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   screenHeader: {
+    width: '100%',
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 12,

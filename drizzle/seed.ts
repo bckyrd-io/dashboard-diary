@@ -40,6 +40,18 @@ async function seed() {
   await db.delete(schema.usersTable);
   await db.delete(schema.branchesTable);
 
+  console.log('🏷️  Seeding Categories...');
+  // Idempotent: keeps any categories added through the app, adds the defaults
+  await db
+    .insert(schema.categoriesTable)
+    .values([
+      { name: 'Office Shoes' },
+      { name: 'Casual Shoes' },
+      { name: 'Sports Shoes' },
+      { name: 'Designer Shoes' },
+    ])
+    .onConflictDoNothing({ target: schema.categoriesTable.name });
+
   console.log('🏢 Inserting Branches...');
   const insertedBranches = await db
     .insert(schema.branchesTable)

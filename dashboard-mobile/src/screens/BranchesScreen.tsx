@@ -25,6 +25,7 @@ import {
 import { api } from '../services/api';
 import { Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
 import { Theme } from '../constants/Theme';
+import { useAuth } from '../context/AuthContext';
 import { useTransfer } from '../context/TransferContext';
 import { confirmDialog } from '../utils/confirm';
 
@@ -37,6 +38,8 @@ interface Branch {
 
 export default function BranchesScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,13 +151,15 @@ export default function BranchesScreen() {
       <ScreenHeader
         title="Distribution & Branches"
         action={
-          <Button
-            variant="outline"
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddBranch' as never)}
-          >
-            <Plus size={20} color={Theme.primary} />
-          </Button>
+          isAdmin ? (
+            <Button
+              variant="outline"
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddBranch' as never)}
+            >
+              <Plus size={20} color={Theme.primary} />
+            </Button>
+          ) : undefined
         }
       />
       {error ? <ErrorState message={error} /> : null}

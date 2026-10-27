@@ -53,7 +53,10 @@ type NavItem = {
   Icon: ComponentType<{ size?: number; color?: string }>;
 };
 
-const adminItems: NavItem[] = [
+// Every role (admin, Cashier, Staff) gets the SAME full menu.
+// Data-level scoping still applies: non-admin users only receive their own
+// scoped data from the dashboard API, but the menu entries themselves are shared.
+const menuItems: NavItem[] = [
   { name: 'Dashboard', label: 'Dashboard', component: DashboardScreen, Icon: LayoutDashboard },
   { name: 'Items', label: 'Items', component: ItemsScreen, Icon: Tag },
   { name: 'Checkout', label: 'Checkout', component: CheckoutScreen, Icon: CreditCard },
@@ -61,42 +64,14 @@ const adminItems: NavItem[] = [
   { name: 'Schedule', label: 'Schedule', component: ScheduleScreen, Icon: CalendarDays },
   { name: 'Staff', label: 'Performance', component: StaffScreen, Icon: BarChart3 },
   { name: 'Users', label: 'Users', component: UsersScreen, Icon: Users },
+  { name: 'Settings', label: 'Settings', component: SettingsScreen, Icon: Settings },
 ];
-
-const cashierItems: NavItem[] = [
-  { name: 'Items', label: 'Items', component: ItemsScreen, Icon: Tag },
-  { name: 'Checkout', label: 'Checkout', component: CheckoutScreen, Icon: CreditCard },
-  { name: 'Schedule', label: 'Schedule', component: ScheduleScreen, Icon: CalendarDays },
-];
-
-const staffItems: NavItem[] = [
-  { name: 'Items', label: 'Items', component: ItemsScreen, Icon: Tag },
-  { name: 'Schedule', label: 'Schedule', component: ScheduleScreen, Icon: CalendarDays },
-];
-
-const settingsItem: NavItem = {
-  name: 'Settings',
-  label: 'Settings',
-  component: SettingsScreen,
-  Icon: Settings,
-};
 
 function DrawerMenu({
-  role,
   logout,
   user,
   navigation,
-}: DrawerContentComponentProps & { role: string; logout: () => void; user: { username: string; role: string } }) {
-  let items: NavItem[];
-  if (role === 'admin') {
-    items = adminItems;
-  } else if (role === 'Cashier') {
-    items = cashierItems;
-  } else {
-    items = staffItems;
-  }
-  const menuItems = [...items, settingsItem];
-
+}: DrawerContentComponentProps & { logout: () => void; user: { username: string; role: string } }) {
   return (
     <DrawerContentScrollView
       style={{ backgroundColor: Theme.background }}
@@ -130,21 +105,11 @@ function DrawerMenu({
   );
 }
 
-function StoreDrawer({ role, logout, user }: { role: string; logout: () => void; user: { username: string; role: string } }) {
-  let items: NavItem[];
-  if (role === 'admin') {
-    items = adminItems;
-  } else if (role === 'Cashier') {
-    items = cashierItems;
-  } else {
-    items = staffItems;
-  }
-  const menuItems = [...items, settingsItem];
-
+function StoreDrawer({ logout, user }: { logout: () => void; user: { username: string; role: string } }) {
   return (
     <Drawer.Navigator
       drawerContent={(props) => (
-        <DrawerMenu role={role} logout={logout} user={user} {...props} />
+        <DrawerMenu logout={logout} user={user} {...props} />
       )}
       screenOptions={({ navigation }) => ({
         headerShown: true,
@@ -194,14 +159,10 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home">
-        {() => <StoreDrawer role={user.role} logout={logout} user={{ username: user.username, role: user.role }} />}
+        {() => <StoreDrawer logout={logout} user={{ username: user.username, role: user.role }} />}
       </Stack.Screen>
-      {user?.role === 'admin' && (
-        <>
-          <Stack.Screen name="AddBranch" component={AddBranchScreen} />
-          <Stack.Screen name="AddUser" component={AddUserScreen} />
-        </>
-      )}
+      {user.role === 'admin' && <Stack.Screen name="AddBranch" component={AddBranchScreen} />}
+      {user.role === 'admin' && <Stack.Screen name="AddUser" component={AddUserScreen} />}
       <Stack.Screen name="ItemDetail" component={ItemDetailScreen} />
       <Stack.Screen name="BranchStock" component={BranchStockScreen} />
       <Stack.Screen name="AddItem" component={AddItemScreen} />

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -59,6 +60,8 @@ interface TransferEvent {
 export default function BranchStockScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const params = (route.params as {
     branchId: number;
     branchName?: string;
@@ -229,6 +232,7 @@ export default function BranchStockScreen() {
 
       <FlatList
         data={items}
+        style={{ width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }}
         keyExtractor={(item) => item.id.toString()}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Theme.primary]} />
@@ -268,10 +272,6 @@ export default function BranchStockScreen() {
                     ) : (
                       <Circle size={14} color={isOutOfStock ? Theme.gray200 : Theme.gray300} />
                     )}
-                  </View>
-
-                  <View style={[styles.itemIcon, isSelected && { backgroundColor: Theme.primary }]}>
-                    <Package size={20} color={isSelected ? '#fff' : Theme.primary} />
                   </View>
 
                   <View style={styles.itemDetails}>
@@ -404,7 +404,6 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 11,
     borderWidth: 2,
     borderColor: Theme.gray300,
     alignItems: 'center',

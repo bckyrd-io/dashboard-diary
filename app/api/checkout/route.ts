@@ -1,13 +1,32 @@
 import { db } from '../../../drizzle/db';
-import { eventsTable, eventItemsTable, itemsTable, notificationsTable, usersTable } from '../../../drizzle/db/schema';
+import { eventsTable, eventItemsTable, itemsTable, notificationsTable, performanceTable, usersTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { items, paymentMethod, description, paymentReference } = body;
+  const { items, paymentMethod, description, paymentReference, userId, clientOpId } = body;
 
   try {
+    // Offline replay idempotency: a crash after the sale was written but before
+    // the device removed it from its outbox must not deduct stock twice.
+    if (clientOpId) {
+      const existingEvent = await db
+        .select()
+        .from(eventsTable)
+        .where(eq(eventsTable.clientOpId, String(clientOpId)))
+        .limit(1);
+
+      if (existingEvent.length > 0) {
+        return NextResponse.json({
+          success: true,
+          event: existingEvent[0],
+          duplicate: true,
+          message: 'Checkout already processed',
+        });
+      }
+    }
+
     // Calculate total amount
     let totalAmount = 0;
     for (const item of items) {
@@ -26,8 +45,27 @@ export async function POST(req: Request) {
         paymentMethod,
         paymentReference: paymentReference || null,
         paymentStatus: 'success',
+        clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();
+
+    // Attribute the sale to the logged-in user so it shows up in their
+    // scoped dashboard ("data generated about them" for staff users).
+    if (userId) {
+      const sellingUser = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, Number(userId)))
+        .limit(1);
+
+      if (sellingUser.length > 0) {
+        await db.insert(performanceTable).values({
+          userId: sellingUser[0].id,
+          activityId: newEvent[0].id,
+          status: 'Completed',
+        });
+      }
+    }
 
     // Create event items and deduct stock
     for (const item of items) {

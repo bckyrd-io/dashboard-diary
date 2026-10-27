@@ -4,9 +4,22 @@ import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
 export async function POST(req: Request) {
-  const { description, activityType, amount, activityDate } = await req.json();
+  const { description, activityType, amount, activityDate, clientOpId } = await req.json();
 
   try {
+    // Offline replay idempotency
+    if (clientOpId) {
+      const existing = await db
+        .select()
+        .from(eventsTable)
+        .where(eq(eventsTable.clientOpId, String(clientOpId)))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return NextResponse.json({ success: true, activity: existing, duplicate: true });
+      }
+    }
+
     const newActivity = await db
       .insert(eventsTable)
       .values({
@@ -15,6 +28,7 @@ export async function POST(req: Request) {
         financialType: activityType || 'Neutral',
         amount: Number(amount),
         date: activityDate,
+        clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();
 

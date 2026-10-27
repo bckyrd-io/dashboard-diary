@@ -58,7 +58,17 @@ export default function StaffScreen() {
     setLoading(true);
     try {
       const [emps, wss, cis, ss] = await Promise.all([getEmployees(), getWorkstations(), getCheckIns(), getSales()]);
-      setEmployees(emps || []);
+      let loadedEmployees = emps || [];
+      // Non-admin: make sure their own employee card exists so it can be shown
+      if (user?.role?.trim().toLowerCase() !== 'admin' && user?.username) {
+        const hasOwn = loadedEmployees.some(
+          (e: Employee) => e.username?.toLowerCase() === user.username.toLowerCase()
+        );
+        if (!hasOwn) {
+          loadedEmployees = [...loadedEmployees, ensureEmployeeForUsername(user.username)];
+        }
+      }
+      setEmployees(loadedEmployees);
       setWorkstations(wss || []);
       setCheckIns(cis || []);
       setSales(ss || []);
@@ -123,7 +133,7 @@ export default function StaffScreen() {
   };
 
   // Build staff dashboard items combining latest check-in and sales summary
-  const dashboardItems = employees.map((emp) => {
+  const allDashboardItems = employees.map((emp) => {
     const empCheckIns = checkIns.filter((c: any) => c.staffId === emp.id);
     const latest = empCheckIns[0]?.timestamp;
     const status = presenceStatusFromTimestamp(latest);
@@ -140,6 +150,14 @@ export default function StaffScreen() {
       salesAmount,
     };
   });
+
+  // Non-admin users only ever see their own performance card
+  const isAdmin = user?.role?.trim().toLowerCase() === 'admin';
+  const dashboardItems = isAdmin
+    ? allDashboardItems
+    : allDashboardItems.filter(
+        (item) => item.username?.toLowerCase() === user?.username?.toLowerCase()
+      );
 
   if (loading) {
     return (

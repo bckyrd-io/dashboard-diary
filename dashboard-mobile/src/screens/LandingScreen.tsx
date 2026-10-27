@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   ImageSourcePropType,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +28,8 @@ const SCREENSHOTS: Record<string, ImageSourcePropType> = {
 
 export default function LandingScreen() {
   const navigation = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const scrollRef = useRef<ScrollView>(null);
   const helpRef = useRef<View>(null);
 
@@ -61,66 +64,66 @@ export default function LandingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>👟</Text>
-            <Text style={styles.logoLabel}>The Sneaker Lounge</Text>
-          </View>
+        <View style={[styles.pageShell, { width: isDesktopOrTablet ? '70%' : '100%' }]}>
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>👟</Text>
+              <Text style={styles.logoLabel}>The Sneaker Lounge</Text>
+            </View>
 
-          <Text style={styles.description}>
-            The Sneaker Lounge Management System helps store admins manage users,
-            process sales, track inventory, and analyze performance, while staff
-            can process checkouts, view schedules, and manage stock.
-          </Text>
-
-          <View style={styles.buttonContainer}>
-            <Button onPress={handleGetStarted} style={styles.primaryButton}>
-              <View style={styles.primaryButtonInner}>
-                <ShoppingBag size={20} color="#fff" />
-                <Text style={styles.primaryButtonText}>Get Started</Text>
-              </View>
-            </Button>
-
-            <TouchableOpacity style={styles.secondaryButton} onPress={scrollToHelp}>
-              <HelpCircle size={20} color={Theme.primary} />
-              <Text style={styles.secondaryButtonText}>Help</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Help Section */}
-        <View style={styles.helpSection} ref={helpRef}>
-          <Text style={styles.sectionTitle}>User Guide</Text>
-          <Text style={styles.sectionDescription}>
-            This guide provides an overview of system functionalities, installation
-            steps, and user roles.
-          </Text>
-
-          {/* Admin Features */}
-          <View style={styles.featureSection}>
-            <Text style={styles.subsectionTitle}>Admin Features</Text>
-            <Text style={styles.subsectionDescription}>
-              Store administrators have full access to manage the entire system,
-              including users, inventory, finances, and reporting.
+            <Text style={styles.description}>
+              The Sneaker Lounge Management System helps store admins manage users,
+              process sales, track inventory, and analyze performance, while staff
+              can process checkouts, view schedules, and manage stock.
             </Text>
-            {renderFeatureCard('User Management', 'Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.', SCREENSHOTS.users, '👷')}
-            {renderFeatureCard('Inventory Management', 'Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.', SCREENSHOTS.inventory, '👟')}
-            {renderFeatureCard('Financial Analytics', 'Record revenue and expenses. Generate profit reports and financial analyses with visual charts.', SCREENSHOTS.analytics, '📈')}
-            {renderFeatureCard('Schedule Management', 'Create and assign work schedules to staff members. Set recurring activities and manage calendar events.', SCREENSHOTS.schedule, '📅')}
-            {renderFeatureCard('Staff Performance', 'Monitor productivity metrics and generate performance reports for individual staff members.', SCREENSHOTS.performance, '📊')}
+
+            <View style={styles.buttonContainer}>
+              <Button onPress={handleGetStarted} style={styles.primaryButton}>
+                <View style={styles.primaryButtonInner}>
+                  <Text style={styles.primaryButtonText}>Get Started</Text>
+                </View>
+              </Button>
+
+              <TouchableOpacity style={styles.secondaryButton} onPress={scrollToHelp}>
+                <Text style={styles.secondaryButtonText}>Help</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Staff Features */}
-          <View style={styles.featureSection}>
-            <Text style={styles.subsectionTitle}>Staff Features</Text>
-            <Text style={styles.subsectionDescription}>
-              Store staff members have focused access to tools for daily operations,
-              processing sales, and managing inventory.
+          {/* Help Section */}
+          <View style={styles.helpSection} ref={helpRef}>
+            <Text style={styles.sectionTitle}>User Guide</Text>
+            <Text style={styles.sectionDescription}>
+              This guide provides an overview of system functionalities, installation
+              steps, and user roles.
             </Text>
-            {renderFeatureCard('Checkout Processing', 'Process customer sales with multiple payment methods including mobile money.', SCREENSHOTS.checkout, '💳')}
-            {renderFeatureCard('Stock Management', 'View inventory levels, process stock transfers, and receive new shipments.', SCREENSHOTS.stock, '📦')}
-            {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', SCREENSHOTS.notifications, '🔔')}
+
+            {/* Admin Features */}
+            <View style={styles.featureSection}>
+              <Text style={styles.subsectionTitle}>Admin Features</Text>
+              <Text style={styles.subsectionDescription}>
+                Store administrators have full access to manage the entire system,
+                including users, inventory, finances, and reporting.
+              </Text>
+              {renderFeatureCard('User Management', 'Create, edit, and deactivate user accounts. Assign roles and permissions to staff members.', SCREENSHOTS.users, '👷')}
+              {renderFeatureCard('Inventory Management', 'Manage shoe catalog with categories, pricing, stock levels, and barcode tracking.', SCREENSHOTS.inventory, '👟')}
+              {renderFeatureCard('Financial Analytics', 'Record revenue and expenses. Generate profit reports and financial analyses with visual charts.', SCREENSHOTS.analytics, '📈')}
+              {renderFeatureCard('Schedule Management', 'Create and assign work schedules to staff members. Set recurring activities and manage calendar events.', SCREENSHOTS.schedule, '📅')}
+              {renderFeatureCard('Staff Performance', 'Monitor productivity metrics and generate performance reports for individual staff members.', SCREENSHOTS.performance, '📊')}
+            </View>
+
+            {/* Staff Features */}
+            <View style={styles.featureSection}>
+              <Text style={styles.subsectionTitle}>Staff Features</Text>
+              <Text style={styles.subsectionDescription}>
+                Store staff members have focused access to tools for daily operations,
+                processing sales, and managing inventory.
+              </Text>
+              {renderFeatureCard('Checkout Processing', 'Process customer sales with multiple payment methods including mobile money.', SCREENSHOTS.checkout, '💳')}
+              {renderFeatureCard('Stock Management', 'View inventory levels, process stock transfers, and receive new shipments.', SCREENSHOTS.stock, '📦')}
+              {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', SCREENSHOTS.notifications, '🔔')}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -130,13 +133,14 @@ export default function LandingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Theme.background },
-  scrollContent: { padding: 20 },
+  scrollContent: { padding: 20, alignItems: 'center' },
+  pageShell: { alignSelf: 'center' },
   heroSection: { paddingTop: 40, paddingBottom: 40 },
-  logoContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  logoContainer: { flexDirection: 'column', alignItems: 'center', marginBottom: 24 },
   logoText: { fontSize: 40, marginRight: 12 },
   logoLabel: { fontSize: 24, fontWeight: 'bold', color: Theme.primary },
   description: { fontSize: 16, color: '#4b5563', lineHeight: 24, marginBottom: 32 },
-  buttonContainer: { flexDirection: 'row', gap: 12 },
+  buttonContainer: { flexDirection: 'column', gap: 12 },
   primaryButton: { flex: 1 },
   primaryButtonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },

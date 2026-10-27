@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,7 @@ export default function ItemsScreen() {
 
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const categoriesFromApi = useRef(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,8 +79,13 @@ export default function ItemsScreen() {
       if (result.success) {
         setItems(result.items);
 
-        // Derive dynamic categories while keeping 'All' and any existing categories
-        if (selectedCategory.toLowerCase() === 'all' && !searchQuery) {
+        // Fallback: derive categories from items only if the persisted
+        // catalog fetch failed (keeps chips usable offline / on API errors)
+        if (
+          !categoriesFromApi.current &&
+          selectedCategory.toLowerCase() === 'all' &&
+          !searchQuery
+        ) {
           const dynamicCats = Array.from(
             new Set(
               result.items
@@ -100,9 +106,25 @@ export default function ItemsScreen() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const result = await api.get<{ success: boolean; categories: { name: string }[] }>(
+        '/api/categories'
+      );
+      if (result.success && result.categories.length > 0) {
+        // Persisted catalog is the source of truth; items' subCategory is only a fallback
+        setCategories(['All', ...result.categories.map((c) => c.name)]);
+        categoriesFromApi.current = true;
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchItems();
+      fetchCategories();
     }, [selectedCategory, searchQuery])
   );
 

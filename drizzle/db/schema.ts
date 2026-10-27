@@ -39,8 +39,16 @@ export const itemsTable = pgTable('items', {
   reorderThreshold: integer('reorder_threshold'), // triggers low-stock notification
   imageUrl: text('image_url'), // for product card
   branchId: integer('branch_id').references(() => branchesTable.id),
+  clientOpId: varchar('client_op_id', { length: 100 }).unique(), // offline replay idempotency
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
+});
+
+// Categories Table (dynamic product categories — Office Shoes, Casual Shoes, etc.)
+export const categoriesTable = pgTable('categories', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // Events Table (was activitiesTable)
@@ -58,6 +66,7 @@ export const eventsTable = pgTable('events', {
   paymentStatus: varchar('payment_status', { length: 50 }), // pending, success, failed
   isRecurring: boolean('is_recurring').default(false),
   recurrenceRule: varchar('recurrence_rule', { length: 50 }), // daily, weekly
+  clientOpId: varchar('client_op_id', { length: 100 }).unique(), // offline replay idempotency
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

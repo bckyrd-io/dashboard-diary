@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Calendar, DollarSign, CreditCard, Package, MapPin } from 'lucide-react-native';
@@ -45,6 +46,8 @@ interface Event {
 export default function EventDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const { eventId } = route.params as { eventId: number };
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -120,92 +123,94 @@ export default function EventDetailScreen() {
       <ScreenHeader title="Event Details" back={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Event Type Badge */}
-        <View style={[styles.typeBadge, { backgroundColor: getEventTypeColor(event.eventType) + '20' }]}>
-          <Text style={[styles.typeBadgeText, { color: getEventTypeColor(event.eventType) }]}>
-            {getEventTypeLabel(event.eventType)}
-          </Text>
-        </View>
-
-        {/* Description */}
-        <Text style={styles.description}>{event.description}</Text>
-
-        {/* Amount */}
-        {event.amount > 0 && (
-          <View style={styles.amountCard}>
-            <DollarSign size={24} color={Theme.primary} />
-            <Text style={styles.amountText}>{formatAmount(event.amount)}</Text>
-          </View>
-        )}
-
-        {/* Event Details */}
-        <View style={styles.detailsCard}>
-          <View style={styles.detailRow}>
-            <Calendar size={18} color={Theme.gray500} />
-            <Text style={styles.detailLabel}>Date</Text>
-            <Text style={styles.detailValue}>{formatDate(event.date)}</Text>
+        <View style={{ width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }}>
+          {/* Event Type Badge */}
+          <View style={[styles.typeBadge, { backgroundColor: getEventTypeColor(event.eventType) + '20' }]}>
+            <Text style={[styles.typeBadgeText, { color: getEventTypeColor(event.eventType) }]}>
+              {getEventTypeLabel(event.eventType)}
+            </Text>
           </View>
 
-          {event.paymentMethod && (
-            <View style={styles.detailRow}>
-              <CreditCard size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Payment</Text>
-              <Text style={styles.detailValue}>
-                {event.paymentMethod === 'nfc_tap'
-                  ? 'NFC Card Tap'
-                  : event.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </Text>
+          {/* Description */}
+          <Text style={styles.description}>{event.description}</Text>
+
+          {/* Amount */}
+          {event.amount > 0 && (
+            <View style={styles.amountCard}>
+              <DollarSign size={24} color={Theme.primary} />
+              <Text style={styles.amountText}>{formatAmount(event.amount)}</Text>
             </View>
           )}
 
-          {event.paymentStatus && (
+          {/* Event Details */}
+          <View style={styles.detailsCard}>
             <View style={styles.detailRow}>
-              <DollarSign size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Status</Text>
-              <View style={[styles.statusBadge, {
-                backgroundColor: event.paymentStatus === 'success' ? Theme.successLight
-                  : event.paymentStatus === 'failed' ? Theme.errorLight
-                  : Theme.warningLight
-              }]}>
-                <Text style={[styles.statusText, {
-                  color: event.paymentStatus === 'success' ? Theme.success
-                    : event.paymentStatus === 'failed' ? Theme.error
-                    : Theme.warning
-                }]}>
-                  {event.paymentStatus.charAt(0).toUpperCase() + event.paymentStatus.slice(1)}
+              <Calendar size={18} color={Theme.gray500} />
+              <Text style={styles.detailLabel}>Date</Text>
+              <Text style={styles.detailValue}>{formatDate(event.date)}</Text>
+            </View>
+
+            {event.paymentMethod && (
+              <View style={styles.detailRow}>
+                <CreditCard size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Payment</Text>
+                <Text style={styles.detailValue}>
+                  {event.paymentMethod === 'nfc_tap'
+                    ? 'NFC Card Tap'
+                    : event.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Text>
               </View>
-            </View>
-          )}
+            )}
 
-          {event.paymentReference && (
-            <View style={styles.detailRow}>
-              <Package size={18} color={Theme.gray500} />
-              <Text style={styles.detailLabel}>Reference</Text>
-              <Text style={[styles.detailValue, styles.referenceText]}>{event.paymentReference}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Line Items */}
-        {event.items && event.items.length > 0 && (
-          <View style={styles.itemsCard}>
-            <Text style={styles.sectionTitle}>Items ({event.items.length})</Text>
-            {event.items.map((item) => (
-              <View key={item.id} style={styles.itemRow}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.itemName}</Text>
-                  <Text style={styles.itemQty}>
-                    {item.quantity} x {formatAmount(item.unitPriceAtSale)}
+            {event.paymentStatus && (
+              <View style={styles.detailRow}>
+                <DollarSign size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Status</Text>
+                <View style={[styles.statusBadge, {
+                  backgroundColor: event.paymentStatus === 'success' ? Theme.successLight
+                    : event.paymentStatus === 'failed' ? Theme.errorLight
+                    : Theme.warningLight
+                }]}>
+                  <Text style={[styles.statusText, {
+                    color: event.paymentStatus === 'success' ? Theme.success
+                      : event.paymentStatus === 'failed' ? Theme.error
+                      : Theme.warning
+                  }]}>
+                    {event.paymentStatus.charAt(0).toUpperCase() + event.paymentStatus.slice(1)}
                   </Text>
                 </View>
-                <Text style={styles.itemTotal}>
-                  {formatAmount(item.quantity * item.unitPriceAtSale)}
-                </Text>
               </View>
-            ))}
+            )}
+
+            {event.paymentReference && (
+              <View style={styles.detailRow}>
+                <Package size={18} color={Theme.gray500} />
+                <Text style={styles.detailLabel}>Reference</Text>
+                <Text style={[styles.detailValue, styles.referenceText]}>{event.paymentReference}</Text>
+              </View>
+            )}
           </View>
-        )}
+
+          {/* Line Items */}
+          {event.items && event.items.length > 0 && (
+            <View style={styles.itemsCard}>
+              <Text style={styles.sectionTitle}>Items ({event.items.length})</Text>
+              {event.items.map((item) => (
+                <View key={item.id} style={styles.itemRow}>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemName}>{item.itemName}</Text>
+                    <Text style={styles.itemQty}>
+                      {item.quantity} x {formatAmount(item.unitPriceAtSale)}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemTotal}>
+                    {formatAmount(item.quantity * item.unitPriceAtSale)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );

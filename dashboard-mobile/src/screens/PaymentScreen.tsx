@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { CreditCard, Smartphone, Banknote, CheckCircle2 } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader, Card } from '../components/ui';
@@ -48,10 +50,13 @@ const methodIcons: Record<PaymentMethod, typeof CreditCard> = {
 export default function PaymentScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const params = (route.params ?? {}) as PaymentParams;
   const { items = [], total = 0, paymentMethod = 'cash' } = params;
 
   const { clearCart } = useCart();
+  const { user } = useAuth();
 
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -77,6 +82,7 @@ export default function PaymentScreen() {
           paymentMethod,
           paymentReference: reference || null,
           description: description || `Sale - ${items.length} item(s)`,
+          userId: user?.id,
         }
       );
       if (result.success) {
@@ -129,7 +135,7 @@ export default function PaymentScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScreenHeader title="Payment" back={handleDone} />
-        <View style={styles.successBox}>
+        <View style={[styles.successBox, { width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }]}>
           <View style={styles.successIconCircle}>
             <CheckCircle2 size={56} color="#16a34a" />
           </View>
@@ -152,6 +158,7 @@ export default function PaymentScreen() {
       <ScreenHeader title="Payment" back={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={{ width: isDesktopOrTablet ? '70%' : '100%', alignSelf: 'center' }}>
         {/* Order Summary — pre-filled */}
         <Card style={styles.summaryCard}>
           <View style={styles.methodRow}>
@@ -239,6 +246,7 @@ export default function PaymentScreen() {
         </TouchableOpacity>
 
         <Text style={styles.secureNote}>You will not be charged until you tap the pay button.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Check } from 'lucide-react-native';
@@ -13,10 +13,19 @@ interface Branch {
   location: string;
 }
 
+const ROLES = [
+  { value: 'Staff', label: 'Staff' },
+  { value: 'Cashier', label: 'Cashier' },
+  { value: 'admin', label: 'Admin' },
+];
+
 export default function AddUserScreen() {
   const navigation = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
+  const isDesktopOrTablet = windowWidth >= 768;
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState(0);
+  const [role, setRole] = useState('Staff');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +43,7 @@ export default function AddUserScreen() {
     }
     setLoading(true);
     try {
-      const result = await api.post<{ message?: string }>('/api/users', { username, email, password, branchId });
+      const result = await api.post<{ message?: string }>('/api/users', { username, email, password, branchId, role });
       if (result.message?.startsWith('Error')) throw new Error(result.message);
       Alert.alert('Success', 'User created successfully.');
       navigation.goBack();
@@ -51,9 +60,38 @@ export default function AddUserScreen() {
         title="Add New User"
         back={() => navigation.goBack()}
       />
-      <View style={styles.content}>
+      <View style={[styles.content, { width: isDesktopOrTablet ? '70%' : undefined, alignSelf: isDesktopOrTablet ? 'center' : 'stretch' }]}>
         <Card>
           <View style={styles.form}>
+            <View>
+              <Text style={styles.label}>Role</Text>
+              <View style={styles.chipContainer}>
+                {ROLES.map((r) => (
+                  <TouchableOpacity
+                    key={r.value}
+                    onPress={() => setRole(r.value)}
+                    style={[
+                      styles.chip,
+                      role === r.value ? styles.chipSelected : styles.chipUnselected,
+                    ]}
+                  >
+                    <View style={styles.chipRow}>
+                      {role === r.value ? <Check size={14} color={Theme.primary} /> : null}
+                      <Text style={[
+                        styles.chipText,
+                        role === r.value ? styles.chipTextSelected : styles.chipTextUnselected,
+                      ]}>
+                        {r.label}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.roleHint}>
+                Admins see all business data; staff and cashiers only see their own activity.
+              </Text>
+            </View>
+
             <View>
               <Text style={styles.label}>Branch</Text>
               <View style={styles.chipContainer}>
@@ -132,6 +170,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Theme.gray700,
     marginBottom: 4,
+  },
+  roleHint: {
+    fontSize: 11,
+    color: Theme.gray500,
+    marginTop: 6,
   },
   chipContainer: {
     flexDirection: 'row',

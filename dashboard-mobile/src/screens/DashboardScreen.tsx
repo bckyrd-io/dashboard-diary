@@ -16,12 +16,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { api } from '../services/api';
 import { Card, ScreenHeader, StatusBadge } from '../components/ui';
 import { Theme } from '../constants/Theme';
-
-interface ActivityByType {
-  activityType: string;
-  totalAmount: number;
-  activities: string[];
-}
+import { useAuth } from '../context/AuthContext';
 
 interface ActivityListItem {
   activityId: number;
@@ -38,7 +33,7 @@ interface ActivityListItem {
 const screenWidth = Dimensions.get('window').width;
 
 export default function DashboardScreen() {
-  const [activitiesByType, setActivitiesByType] = useState<ActivityByType[]>([]);
+  const { user } = useAuth();
   const [activitiesList, setActivitiesList] = useState<ActivityListItem[]>([]);
   const [filtered, setFiltered] = useState<ActivityListItem[]>([]);
   const [search, setSearch] = useState('');
@@ -48,8 +43,8 @@ export default function DashboardScreen() {
 
   const fetchData = async () => {
     try {
-      const result = await api.get<{ activitiesByType: ActivityByType[]; activitiesList: ActivityListItem[] }>('/api/dashboard');
-      setActivitiesByType(result.activitiesByType ?? []);
+      const userIdParam = user?.id ? `?userId=${user.id}` : '';
+      const result = await api.get<{ activitiesList: ActivityListItem[] }>(`/api/dashboard${userIdParam}`);
       setActivitiesList(result.activitiesList ?? []);
       setFiltered(result.activitiesList ?? []);
       setError('');
@@ -61,7 +56,7 @@ export default function DashboardScreen() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [user?.id]);
 
   useEffect(() => {
     const q = search.toLowerCase();
@@ -77,25 +72,29 @@ export default function DashboardScreen() {
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
-  // Calculate revenue, expense, net profit
-  let revenue = 0;
-  let expense = 0;
-  activitiesByType.forEach((a) => {
-    if (a.activityType === 'Revenue') revenue += a.totalAmount;
-    else if (a.activityType === 'Expense') expense += a.totalAmount;
-  });
-  const netProfit = revenue - expense;
-
-  // Prepare chart data
-  const chartLabels = activitiesByType
-    .filter((a) => a.activityType !== 'Neutral')
-    .map((a) => a.activityType);
-  const chartRevenue = activitiesByType
+  // Calculate revenue, expense, net profit from the SEARCHED subset,
+  // so cards/graph always reflect exactly the rows being displayed.
+  // With no search this equals the totals of everything the user can see.
+  const searchedRevenue = filtered
     .filter((a) => a.activityType === 'Revenue')
-    .map((a) => a.totalAmount);
-  const chartExpense = activitiesByType
+    .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+  const searchedExpense = filtered
     .filter((a) => a.activityType === 'Expense')
-    .map((a) => a.totalAmount);
+    .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+  const searchedNetProfit = searchedRevenue - searchedExpense;
+
+  // Build per-type summary from the searched subset for the stat cards
+  const searchedByType = Array.from(
+    new Set(filtered.map((a) => a.activityType).filter((t) => t !== 'Neutral'))
+  ).map((t) => ({
+    activityType: t,
+    totalAmount: filtered
+      .filter((a) => a.activityType === t)
+      .reduce((sum, a) => sum + Number(a.amount || 0), 0),
+  }));
+
+  // Chart labels from the searched subset
+  const chartLabels = searchedByType.map((a) => a.activityType);
 
   const hasChartData = chartLabels.length > 0;
 
@@ -142,9 +141,9 @@ export default function DashboardScreen() {
           </Card>
         ) : null}
 
-        {/* Stat Cards — Revenue / Expense / Net Profit */}
+        {/* Stat Cards — Revenue / Expense / Net Profit (reflect current search) */}
         <View style={styles.statsRow}>
-          {activitiesByType.map((activity) => (
+          {searchedByType.map((activity) => (
             <Card key={activity.activityType} style={styles.statCard}>
               <Text style={styles.statLabel}>{activity.activityType}</Text>
               <Text style={[styles.statValue, { color: activity.activityType === 'Expense' ? Theme.destructive : Theme.primary }]}>
@@ -154,8 +153,8 @@ export default function DashboardScreen() {
           ))}
           <Card style={styles.statCard}>
             <Text style={styles.statLabel}>Net Profit</Text>
-            <Text style={[styles.statValue, { color: netProfit >= 0 ? Theme.primary : Theme.destructive }]}>
-              MWK{netProfit.toLocaleString()}
+            <Text style={[styles.statValue, { color: searchedNetProfit >= 0 ? Theme.primary : Theme.destructive }]}>
+              MWK{searchedNetProfit.toLocaleString()}
             </Text>
           </Card>
         </View>
@@ -172,7 +171,7 @@ export default function DashboardScreen() {
                   datasets: [
                     {
                       data: chartLabels.map((label) => {
-                        const match = activitiesByType.find((a) => a.activityType === label);
+                        const match = searchedByType.find((a) => a.activityType === label);
                         return match ? match.totalAmount : 0;
                       }),
                     },
