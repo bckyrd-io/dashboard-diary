@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "dashboard-mobile",
+    "name": "Dashboard Mobile",
     "slug": "dashboard-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.sneakerlounge.dashboard",
+      "package": "com.mobile.dashboard",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

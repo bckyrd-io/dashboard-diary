@@ -69,24 +69,25 @@ class NfcService {
   async readProductTag(): Promise<ProductTagResult> {
     const isReady = await this.isSupported();
     if (!isReady || !NfcManager) {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      try {
-        // Haptics are optional; ignore failures.
-        const Haptics = require('expo-haptics');
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {}
-
-      const tagId = `TAG-${Math.random().toString(16).substring(2, 10).toUpperCase()}`;
       return {
-        success: true,
-        tagId,
-        payload: JSON.stringify({ mock: true, tagId, source: 'Expo Go fallback' }),
+        success: false,
+        error:
+          'NFC scan is not available in this app environment. The native NFC module is not loaded here (common in Expo Go / web / non-native builds), so no scan was registered.',
       };
     }
 
     try {
       await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA]);
       const tag = await NfcManager.getTag();
+      const tagId = tag?.id ? String(tag.id).trim() : '';
+      const payload = tag?.ndefMessage ? JSON.stringify(tag.ndefMessage) : undefined;
+
+      if (!tagId && !payload) {
+        return {
+          success: false,
+          error: 'No NFC tag data was detected. No check-in was recorded.',
+        };
+      }
 
       try {
         const Haptics = require('expo-haptics');
@@ -95,8 +96,8 @@ class NfcService {
 
       return {
         success: true,
-        tagId: tag?.id,
-        payload: tag?.ndefMessage ? JSON.stringify(tag.ndefMessage) : undefined,
+        tagId: tagId || undefined,
+        payload,
       };
     } catch (err: any) {
       return {

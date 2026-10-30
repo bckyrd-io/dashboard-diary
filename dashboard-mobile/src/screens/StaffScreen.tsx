@@ -52,7 +52,7 @@ export default function StaffScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const loadAll = async () => {
     setLoading(true);
@@ -91,13 +91,19 @@ export default function StaffScreen() {
 
   const handleScan = async () => {
     setScanning(true);
-    setError(null);
+    setScanStatus(null);
     try {
       // Try reading product tag first (workstation tag)
       const result = await nfcService.readProductTag();
-      if (!result || !result.success) throw new Error(result?.error || 'No tag read');
+      const readValue = result?.tagId ?? result?.payload ?? null;
+      if (!result || !result.success || !readValue) {
+        const message = result?.error || 'No NFC tag was read. The check was not registered.';
+        setScanStatus({ type: 'error', message });
+        return;
+      }
 
-      const tagId: string = result.tagId ?? `TAG-${Date.now().toString(36).toUpperCase()}`;
+      const tagId = String(result.tagId ?? readValue).trim();
+      setScanStatus({ type: 'success', message: `Read NFC: ${tagId}${result.payload ? ` • ${result.payload}` : ''}` });
 
       // Find workstation by tag; if tag belongs to workstation, associate
       const ws = await findWorkstationByTag(tagId);
@@ -126,7 +132,8 @@ export default function StaffScreen() {
       // refresh local state
       await loadAll();
     } catch (err: any) {
-      setError(err?.message ?? 'Scan failed');
+      const message = err?.message ?? 'Scan failed';
+      setScanStatus({ type: 'error', message });
     } finally {
       setScanning(false);
     }
@@ -181,9 +188,17 @@ export default function StaffScreen() {
             <Text style={{ color: '#fff', fontWeight: '600' }}>Scan NFC</Text>
           </View>
         </Button>
-        {error ? (
-          <Card style={{ backgroundColor: '#fff6f6', borderColor: '#ffdddd' }}>
-            <Text style={{ color: Theme.destructive }}>{error}</Text>
+        {scanStatus ? (
+          <Card
+            style={{
+              marginTop: 8,
+              backgroundColor: scanStatus.type === 'success' ? '#ecfdf5' : '#fff6f6',
+              borderColor: scanStatus.type === 'success' ? '#bbf7d0' : '#ffdddd',
+            }}
+          >
+            <Text style={{ color: scanStatus.type === 'success' ? '#166534' : Theme.destructive }}>
+              {scanStatus.message}
+            </Text>
           </Card>
         ) : null}
       </View>

@@ -52,10 +52,6 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={[styles.centered, { width: isDesktopOrTablet ? '70%' : '100%' }]}>
-          {/* Logo / Brand */}
-          <View style={styles.logoSection}>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
-          </View>
 
           {/* Card */}
           <View style={styles.card}>
@@ -109,9 +105,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.footer}>
-            The Sneaker Lounge - Home of Shoes and Other Accessories
-          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

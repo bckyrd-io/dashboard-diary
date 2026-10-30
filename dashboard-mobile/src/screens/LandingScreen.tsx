@@ -68,8 +68,8 @@ export default function LandingScreen() {
           {/* Hero Section */}
           <View style={styles.heroSection}>
             <View style={styles.logoContainer}>
-              <Text style={styles.logoText}>👟</Text>
               <Text style={styles.logoLabel}>The Sneaker Lounge</Text>
+              <Text style={styles.logoText}>👟</Text>
             </View>
 
             <Text style={styles.description}>
