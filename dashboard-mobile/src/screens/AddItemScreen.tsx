@@ -36,6 +36,74 @@ interface Item {
   branchId: number | null;
 }
 
+type SelectOption = { value: string; label: string };
+
+const ENTRY_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'inventory', label: 'Inventory Item' },
+  { value: 'event', label: 'Event / Activity' },
+];
+
+// Server-side event types: sale | receiving | transfer | adjustment.
+// "expense" is a mobile shorthand mapped to adjustment + Expense financial type.
+const EVENT_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'sale', label: 'Sale' },
+  { value: 'receiving', label: 'Receiving' },
+  { value: 'expense', label: 'Expense' },
+  { value: 'adjustment', label: 'Adjustment' },
+];
+
+const FINANCIAL_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'Revenue', label: 'Revenue' },
+  { value: 'Expense', label: 'Expense' },
+  { value: 'Neutral', label: 'Neutral' },
+];
+
+// Financial type implied by the selected event type (still overridable)
+const DEFAULT_FINANCIAL_BY_EVENT: Record<string, string> = {
+  sale: 'Revenue',
+  receiving: 'Neutral',
+  expense: 'Expense',
+  adjustment: 'Neutral',
+};
+
+function SelectRow({
+  label,
+  value,
+  options,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+  hint?: string;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.chipRow}>
+        {options.map((option) => {
+          const isSelected = option.value === value;
+          return (
+            <TouchableOpacity
+              key={option.value}
+              style={[styles.chip, isSelected && styles.chipActive]}
+              onPress={() => onChange(option.value)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+    </View>
+  );
+}
+
 export default function AddItemScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -56,12 +124,21 @@ export default function AddItemScreen() {
   const [reorderThreshold, setReorderThreshold] = useState(existingItem?.reorderThreshold?.toString() || '');
   const [imageUrl, setImageUrl] = useState<string | null>(existingItem?.imageUrl || null);
 
+  // Entry type: a plain inventory product (items table) or an event/activity
+  // (events table — sale, receiving, expense, adjustment). Only offered for new
+  // entries; an existing item is always inventory.
+  const [entryType, setEntryType] = useState<'inventory' | 'event'>('inventory');
+  const [eventType, setEventType] = useState('sale');
+  const [financialType, setFinancialType] = useState('Revenue');
+  const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0]);
+
   // Dynamic categories loaded from the catalog, so newly created categories appear too
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
 
   const isEditing = !!existingItem;
+  const isEvent = entryType === 'event';
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -199,21 +276,39 @@ export default function AddItemScreen() {
   };
 
   const handleSave = async () => {
+    const isEvent = entryType === 'event';
+
     if (!name.trim()) {
-      Alert.alert('Error', 'Product name is required');
+      Alert.alert('Error', isEvent ? 'Description is required' : 'Product name is required');
       return;
     }
     if (!price || Number(price) <= 0) {
-      Alert.alert('Error', 'Valid price is required');
+      Alert.alert('Error', isEvent ? 'Valid amount is required' : 'Valid price is required');
       return;
     }
-    if (!subCategory) {
+    if (!isEvent && !subCategory) {
       Alert.alert('Error', 'Please select a category');
       return;
     }
 
     setLoading(true);
     try {
+      if (isEvent) {
+        // Events are activities (sale/receiving/expense/adjustment), not stock rows.
+        // "expense" is stored server-side as an adjustment with an Expense financial type.
+        const storedEventType = eventType === 'expense' ? 'adjustment' : eventType;
+        await api.post('/api/events', {
+          eventType: storedEventType,
+          financialType,
+          description: name.trim(),
+          amount: Number(price),
+          date: eventDate || new Date().toISOString().split('T')[0],
+        });
+        Alert.alert('Success', 'Event created successfully');
+        navigation.goBack();
+        return;
+      }
+
       const payload = {
         ...(isEditing ? { id: existingItem.id } : {}),
         name: name.trim(),
@@ -269,12 +364,28 @@ export default function AddItemScreen() {
   return (
     <View style={styles.container}>
       <ScreenHeader
-        title={isEditing ? 'Edit Item' : 'Add Item'}
+        title={isEditing ? 'Edit Item' : isEvent ? 'Add Event' : 'Add Item'}
         back={() => navigation.goBack()}
       />
 
       <ScrollView contentContainerStyle={[styles.content, styles.formShell, { width: isDesktopOrTablet ? '70%' : '100%' }]}>
-        {/* Product Image Picker */}
+        {/* Entry type — inventory product vs. event/activity (new entries only) */}
+        {!isEditing ? (
+          <SelectRow
+            label="Entry Type *"
+            value={entryType}
+            options={ENTRY_TYPE_OPTIONS}
+            onChange={(value) => setEntryType(value as 'inventory' | 'event')}
+            hint={
+              isEvent
+                ? 'Recorded as an activity (sale, receiving, expense, adjustment) — no stock row is created'
+                : 'Adds a product to your stock catalog'
+            }
+          />
+        ) : null}
+
+        {/* Product Image Picker (inventory only) */}
+        {!isEvent && (
         <View style={styles.field}>
           <Text style={styles.label}>Product Image</Text>
           <TouchableOpacity style={styles.imagePickerBox} onPress={handleImagePress} activeOpacity={0.7}>
@@ -291,21 +402,23 @@ export default function AddItemScreen() {
           </TouchableOpacity>
           <Text style={styles.hint}>Gallery or camera · compressed automatically</Text>
         </View>
+        )}
 
-        {/* Product Name */}
+        {/* Product Name / Description */}
         <View style={styles.field}>
-          <Text style={styles.label}>Product Name *</Text>
+          <Text style={styles.label}>{isEvent ? 'Description *' : 'Product Name *'}</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Classic Oxford Brogue"
+            placeholder={isEvent ? 'e.g. Walk-in sale, stock purchase, rent...' : 'e.g. Classic Oxford Brogue'}
             placeholderTextColor={Theme.gray400}
           />
         </View>
 
         {/* Category — inline searchable dropdown (same pattern as the
             Performance screen's Assign Activity input, no modal) */}
+        {!isEvent && (
         <View style={styles.field}>
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity
@@ -393,8 +506,44 @@ export default function AddItemScreen() {
             Search and pick a category, or type a new name to create one
           </Text>
         </View>
+        )}
 
-        {/* Barcode */}
+        {/* Event details — only when recording an activity */}
+        {isEvent && (
+          <>
+            <SelectRow
+              label="Event Type *"
+              value={eventType}
+              options={EVENT_TYPE_OPTIONS}
+              onChange={(value) => {
+                setEventType(value);
+                setFinancialType(DEFAULT_FINANCIAL_BY_EVENT[value] ?? 'Neutral');
+              }}
+            />
+            <SelectRow
+              label="Financial Type *"
+              value={financialType}
+              options={FINANCIAL_TYPE_OPTIONS}
+              onChange={setFinancialType}
+              hint="Drives the Revenue / Expense / Neutral totals on the dashboard"
+            />
+            <View style={styles.field}>
+              <Text style={styles.label}>Date</Text>
+              <TextInput
+                style={styles.input}
+                value={eventDate}
+                onChangeText={setEventDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={Theme.gray400}
+                autoCapitalize="none"
+              />
+              <Text style={styles.hint}>Defaults to today · format YYYY-MM-DD</Text>
+            </View>
+          </>
+        )}
+
+        {/* Barcode (inventory only) */}
+        {!isEvent && (
         <View style={styles.field}>
           <Text style={styles.label}>Barcode</Text>
           <TextInput
@@ -406,8 +555,10 @@ export default function AddItemScreen() {
             autoCapitalize="characters"
           />
         </View>
+        )}
 
-        {/* SKU */}
+        {/* SKU (inventory only) */}
+        {!isEvent && (
         <View style={styles.field}>
           <Text style={styles.label}>SKU</Text>
           <TextInput
@@ -418,11 +569,12 @@ export default function AddItemScreen() {
             placeholderTextColor={Theme.gray400}
           />
         </View>
+        )}
 
         {/* Price Row */}
         <View style={styles.row}>
-          <View style={[styles.field, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Selling Price (MWK) *</Text>
+          <View style={[styles.field, isEvent ? { flex: 1 } : { flex: 1, marginRight: 8 }]}>
+            <Text style={styles.label}>{isEvent ? 'Amount (MWK) *' : 'Selling Price (MWK) *'}</Text>
             <TextInput
               style={styles.input}
               value={price}
@@ -432,6 +584,7 @@ export default function AddItemScreen() {
               keyboardType="numeric"
             />
           </View>
+          {!isEvent && (
           <View style={[styles.field, { flex: 1, marginLeft: 8 }]}>
             <Text style={styles.label}>Cost Price (MWK)</Text>
             <TextInput
@@ -443,9 +596,11 @@ export default function AddItemScreen() {
               keyboardType="numeric"
             />
           </View>
+          )}
         </View>
 
-        {/* Stock Row */}
+        {/* Stock Row (inventory only) */}
+        {!isEvent && (
         <View style={styles.row}>
           <View style={[styles.field, { flex: 1, marginRight: 8 }]}>
             <Text style={styles.label}>Quantity</Text>
@@ -469,8 +624,10 @@ export default function AddItemScreen() {
             />
           </View>
         </View>
+        )}
 
-        {/* Reorder Threshold */}
+        {/* Reorder Threshold (inventory only) */}
+        {!isEvent && (
         <View style={styles.field}>
           <Text style={styles.label}>Low Stock Alert Threshold</Text>
           <TextInput
@@ -483,6 +640,7 @@ export default function AddItemScreen() {
           />
           <Text style={styles.hint}>Get notified when stock falls below this level</Text>
         </View>
+        )}
 
         {/* Save Button */}
         <TouchableOpacity
@@ -496,7 +654,7 @@ export default function AddItemScreen() {
             <>
               <Package size={20} color="#fff" />
               <Text style={styles.saveButtonText}>
-                {isEditing ? 'Update Item' : 'Add Item'}
+                {isEditing ? 'Update Item' : isEvent ? 'Add Event' : 'Add Item'}
               </Text>
             </>
           )}
@@ -531,6 +689,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Theme.gray500,
     marginTop: 4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: Theme.radius,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    backgroundColor: Theme.muted,
+  },
+  chipActive: {
+    backgroundColor: Theme.primaryLight,
+    borderColor: Theme.primary,
+  },
+  chipText: {
+    fontSize: 14,
+    color: Theme.mutedForeground,
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: Theme.primary,
+    fontWeight: '700',
   },
   row: {
     flexDirection: 'row',

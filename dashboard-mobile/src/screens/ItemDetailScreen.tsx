@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag, AlertTriangle } from 'lucide-react-native';
+import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader } from '../components/ui';
@@ -120,19 +120,6 @@ export default function ItemDetailScreen() {
       <ScreenHeader
         title="Item Details"
         back={() => navigation.goBack()}
-        action={
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => (navigation as any).navigate('AddItem', { item })}
-            >
-              <Edit size={20} color={Theme.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
-              <Trash2 size={20} color={Theme.destructive} />
-            </TouchableOpacity>
-          </View>
-        }
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -146,15 +133,10 @@ export default function ItemDetailScreen() {
             </View>
           )}
 
-          {/* Name and Price */}
+          {/* Name and Price — name/image are the detail view's own presentation */}
           <View style={styles.titleSection}>
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
-            <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg }]}>
-              <Text style={[styles.stockText, { color: stockStatus.color }]}>
-                {stockStatus.label} ({item.quantity} {item.unit || 'units'})
-              </Text>
-            </View>
           </View>
 
           {/* Details */}
@@ -190,19 +172,14 @@ export default function ItemDetailScreen() {
                 <Text style={styles.detailValue}>{formatPrice(item.costPrice)}</Text>
               </View>
             )}
-
-            {item.reorderThreshold && (
-              <View style={styles.detailRow}>
-                <AlertTriangle size={18} color={Theme.gray500} />
-                <Text style={styles.detailLabel}>Reorder At</Text>
-                <Text style={styles.detailValue}>{item.reorderThreshold} units</Text>
-              </View>
-            )}
           </View>
 
           {/* Stock Info */}
           <View style={styles.detailsCard}>
             <Text style={styles.sectionTitle}>Stock Information</Text>
+            <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg, alignSelf: 'center', marginBottom: 12 }]}>
+              <Text style={[styles.stockText, { color: stockStatus.color }]}>{stockStatus.label}</Text>
+            </View>
             <View style={styles.stockInfo}>
               <View style={styles.stockStat}>
                 <Text style={styles.stockStatValue}>{item.quantity}</Text>
@@ -213,6 +190,26 @@ export default function ItemDetailScreen() {
                 <Text style={styles.stockStatLabel}>Reorder Point</Text>
               </View>
             </View>
+          </View>
+
+          {/* Actions — below the stock cards instead of in the header */}
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => (navigation as any).navigate('AddItem', { item })}
+              activeOpacity={0.7}
+            >
+              <Edit size={18} color={Theme.primary} />
+              <Text style={styles.editButtonText}>Edit Item</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={handleDelete}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={18} color={Theme.destructive} />
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -225,8 +222,32 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16, color: Theme.gray500 },
-  headerActions: { flexDirection: 'row', gap: 12 },
-  headerButton: { padding: 8 },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: Theme.radius,
+    borderWidth: 1,
+  },
+  editButton: {
+    backgroundColor: Theme.primaryLight,
+    borderColor: Theme.primary,
+  },
+  editButtonText: { color: Theme.primary, fontSize: 15, fontWeight: '600' },
+  deleteButton: {
+    backgroundColor: Theme.errorLight,
+    borderColor: Theme.error,
+  },
+  deleteButtonText: { color: Theme.destructive, fontSize: 15, fontWeight: '600' },
   content: { paddingBottom: 24 },
   itemImage: {
     width: '100%',
