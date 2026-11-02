@@ -83,6 +83,17 @@ export async function POST(req: Request) {
         counts[table] = Number((res as { rowCount?: number }).rowCount ?? 0);
       }
 
+      // Reset identity sequences BEFORE reseeding so the default branch and admin
+      // land on id 1 (and `?userId=1` stays valid on every future reset).
+      // NOTE: pg_get_serial_sequence's first argument must be a *string literal*
+      // ('event_items'), not an identifier — passing sql.identifier() there makes
+      // Postgres read the table name as a column reference and the tx aborts.
+      for (const table of ALL_TABLES) {
+        await tx.execute(
+          sql`SELECT setval(pg_get_serial_sequence(${sql.raw(`'${table}'`)}, 'id'), COALESCE((SELECT MAX(id) FROM ${sql.identifier(table)}), 0) + 1, false)`
+        );
+      }
+
       // Reinsert a default branch first — users.branch_id references it.
       const [branch] = await tx
         .insert(branchesTable)
@@ -101,16 +112,6 @@ export async function POST(req: Request) {
           role: 'admin',
         })
         .returning();
-
-      // Reset identity sequences so future inserts start from 1 again.
-      // NOTE: pg_get_serial_sequence's first argument must be a *string literal*
-      // ('event_items'), not an identifier — passing sql.identifier() there makes
-      // Postgres read the table name as a column reference and the tx aborts.
-      for (const table of ALL_TABLES) {
-        await tx.execute(
-          sql`SELECT setval(pg_get_serial_sequence(${sql.raw(`'${table}'`)}, 'id'), COALESCE((SELECT MAX(id) FROM ${sql.identifier(table)}), 0) + 1, false)`
-        );
-      }
 
       return { branch, admin };
     });
