@@ -1,5 +1,12 @@
 import { db } from '../../../../drizzle/db';
-import { eventsTable, eventItemsTable, itemsTable } from '../../../../drizzle/db/schema';
+import {
+  eventsTable,
+  eventItemsTable,
+  itemsTable,
+  schedulesTable,
+  performanceTable,
+  notificationsTable,
+} from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 
@@ -217,8 +224,13 @@ export async function DELETE(
       }
     }
 
-    // Delete event items and event
+    // Delete event items, event, and everything that references it so the
+    // calendar (schedules), staff attribution (performance), and notification
+    // feeds don't keep ghosts of a deleted event.
     await db.delete(eventItemsTable).where(eq(eventItemsTable.eventId, eventId));
+    await db.delete(schedulesTable).where(eq(schedulesTable.activityId, eventId));
+    await db.delete(performanceTable).where(eq(performanceTable.activityId, eventId));
+    await db.delete(notificationsTable).where(eq(notificationsTable.relatedEventId, eventId));
     await db.delete(eventsTable).where(eq(eventsTable.id, eventId));
 
     return NextResponse.json({
