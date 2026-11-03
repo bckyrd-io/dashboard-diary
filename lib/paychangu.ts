@@ -34,12 +34,16 @@ export function isMobileMoneyMethod(method: unknown): method is 'airtel_money' |
   return method === 'airtel_money' || method === 'tnm_mpamba';
 }
 
-// 0991234567 -> +265991234567 (PayChangu expects E.164-ish Malawi numbers)
+// PayChangu wants a plain Malawi number (nine digits, optionally with a
+// leading 0) — it explicitly rejects the +265 E.164 form:
+//   0991234567 -> 991234567
+//   +265991234567 -> 991234567
+//   899817565 -> 899817565
 export function normalizeMobile(raw: string): string {
-  const digits = raw.replace(/[^\d]/g, '');
-  if (digits.startsWith('265')) return `+${digits}`;
-  if (digits.startsWith('0')) return `+265${digits.slice(1)}`;
-  return `+265${digits}`;
+  let digits = raw.replace(/[^\d]/g, '');
+  if (digits.startsWith('265')) digits = digits.slice(3);
+  if (digits.startsWith('0')) digits = digits.slice(1);
+  return digits;
 }
 
 export function generateChargeId(): string {
