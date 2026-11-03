@@ -129,8 +129,20 @@ export async function initiateMomoCharge(input: InitiateInput) {
   });
 
   if (!response.ok || !response.json || response.json.status !== 'success') {
+    // Keep the raw gateway body for debugging (their `message` is sometimes
+    // an object, which would otherwise stringify to "[object Object]").
+    console.error(
+      'PayChangu initiate rejected:',
+      response.status,
+      (response.text || '').slice(0, 1000)
+    );
+    const rawMessage = response.json?.message;
     const message =
-      response.json?.message || response.text || `PayChangu error (HTTP ${response.status})`;
+      typeof rawMessage === 'string' && rawMessage
+        ? rawMessage
+        : rawMessage
+          ? JSON.stringify(rawMessage)
+          : response.text || `PayChangu error (HTTP ${response.status})`;
     await db
       .update(paymentsTable)
       .set({ status: 'failed', updatedAt: new Date() })
