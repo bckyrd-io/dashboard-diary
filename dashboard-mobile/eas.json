@@ -13,7 +13,6 @@
       }
     },
     "preview-lan": {
-      "name": "Dashboard Mobile (LAN)",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
