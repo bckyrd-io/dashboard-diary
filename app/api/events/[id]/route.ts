@@ -6,6 +6,7 @@ import {
   schedulesTable,
   performanceTable,
   notificationsTable,
+  paymentsTable,
 } from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
@@ -223,6 +224,14 @@ export async function DELETE(
           .where(eq(itemsTable.id, Number(item.itemId)));
       }
     }
+
+    // Detach payment intents first — payments.event_id would otherwise block
+    // the delete (FK with no cascade). The payment record itself is kept as
+    // gateway history, just no longer linked to a (now deleted) sale.
+    await db
+      .update(paymentsTable)
+      .set({ eventId: null, updatedAt: new Date() })
+      .where(eq(paymentsTable.eventId, eventId));
 
     // Delete event items, event, and everything that references it so the
     // calendar (schedules), staff attribution (performance), and notification
