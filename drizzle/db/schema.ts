@@ -109,6 +109,46 @@ export const performanceTable = pgTable('performance', {
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
+// Workstations Table (NFC-tagged physical stations, e.g. a register)
+export const workstationsTable = pgTable('workstations', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  tagId: varchar('tag_id', { length: 100 }).unique(), // NFC tag attached to the station
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
+});
+
+// Staff check-ins Table (real NFC scan records — performance screen source of truth)
+export const staffCheckinsTable = pgTable('staff_checkins', {
+  id: serial('id').primaryKey(),
+  staffId: integer('staff_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+  tagId: varchar('tag_id', { length: 100 }).notNull(), // tag that was scanned
+  workstationId: integer('workstation_id').references(() => workstationsTable.id),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Payments Table (PayChangu intent — pending until the gateway verifies it)
+export const paymentsTable = pgTable('payments', {
+  id: serial('id').primaryKey(),
+  chargeId: varchar('charge_id', { length: 100 }).notNull().unique(), // our unique tx id sent to PayChangu
+  gatewayReference: varchar('gateway_reference', { length: 255 }), // PayChangu trans/reference id
+  amount: integer('amount').notNull().default(0),
+  currency: varchar('currency', { length: 10 }).notNull().default('MWK'),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(), // airtel_money | tnm_mpamba
+  mobile: varchar('mobile', { length: 30 }), // customer phone charged
+  status: varchar('status', { length: 30 }).notNull().default('pending'), // pending | success | failed
+  items: text('items'), // JSON cart snapshot [{itemId, quantity, unitPriceAtSale}]
+  description: varchar('description', { length: 255 }),
+  userId: integer('user_id').references(() => usersTable.id),
+  eventId: integer('event_id').references(() => eventsTable.id), // set once the sale is recorded
+  clientOpId: varchar('client_op_id', { length: 100 }).unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
+});
+
 // Notifications Table (NEW)
 export const notificationsTable = pgTable('notifications', {
   id: serial('id').primaryKey(),

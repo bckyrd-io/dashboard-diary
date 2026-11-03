@@ -130,6 +130,54 @@ export async function getUsers(userId?: number | null) {
   return { success: true as const, users };
 }
 
+// Offline shape of GET /api/staff: real users plus each one's latest check-in.
+export async function getStaff() {
+  const db = await getOfflineDb();
+  const users = await db.getAllAsync<Row>('SELECT * FROM users ORDER BY id');
+  const checkIns = await db.getAllAsync<Row>(
+    'SELECT * FROM staff_checkins ORDER BY timestamp DESC'
+  );
+
+  const latestByStaff = new Map<number, Row>();
+  for (const row of checkIns) {
+    const key = Number(row.staffId);
+    if (!latestByStaff.has(key)) latestByStaff.set(key, row);
+  }
+
+  const staff = users.map((u) => {
+    const latest = latestByStaff.get(Number(u.id));
+    return {
+      id: u.id,
+      username: u.username,
+      fullName: u.username,
+      workstationId: latest?.workstationId ?? undefined,
+      lastCheckIn: latest?.timestamp ?? undefined,
+    };
+  });
+
+  return { success: true as const, staff };
+}
+
+export async function getStaffCheckIns(staffId?: number | null) {
+  const db = await getOfflineDb();
+  const rows = staffId
+    ? await db.getAllAsync<Row>(
+        'SELECT * FROM staff_checkins WHERE staffId = ? ORDER BY timestamp DESC',
+        [staffId]
+      )
+    : await db.getAllAsync<Row>('SELECT * FROM staff_checkins ORDER BY timestamp DESC');
+
+  const checkIns = rows.map((r) => ({
+    id: r.id,
+    staffId: r.staffId,
+    tagId: r.tagId,
+    workstationId: r.workstationId ?? undefined,
+    timestamp: r.timestamp,
+  }));
+
+  return { success: true as const, checkIns };
+}
+
 export async function getEvents(filters: {
   eventType?: string | null;
   branchId?: string | null;
@@ -457,6 +505,7 @@ export async function remapLocalId(entity: string, localId: number, serverId: nu
       'UPDATE notifications SET userId = ?2 WHERE userId = ?1',
     ],
     categories: ['UPDATE OR REPLACE categories SET id = ?2 WHERE id = ?1'],
+    staff_checkins: ['UPDATE OR REPLACE staff_checkins SET id = ?2 WHERE id = ?1'],
   };
 
   await db.withTransactionAsync(async () => {

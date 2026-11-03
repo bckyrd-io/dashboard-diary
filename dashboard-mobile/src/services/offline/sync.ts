@@ -40,7 +40,13 @@ const REFERENCE_KEYS: Record<string, string> = {
   relatedEventId: 'events',
   relatedItemId: 'items',
 };
-const TABLES_WITH_NEGATIVE_IDS = new Set(['items', 'events', 'branches', 'categories']);
+const TABLES_WITH_NEGATIVE_IDS = new Set([
+  'items',
+  'events',
+  'branches',
+  'categories',
+  'staff_checkins',
+]);
 
 function isNegativeId(value: unknown): boolean {
   return typeof value === 'number' || (typeof value === 'string' && /^-\d+$/.test(value));
@@ -110,6 +116,8 @@ function extractCreatedId(entity: string, response: Row | null): number | null {
       return toNumber(response.category?.id);
     case 'performance':
       return toNumber(response.performance?.[0]?.id);
+    case 'staff_checkins':
+      return toNumber(response.checkIn?.id);
     default:
       return null;
   }
@@ -233,7 +241,7 @@ export async function pullAll(user: OfflineUser): Promise<void> {
       : `/api/performance?userId=${user.id}`;
     const notificationsPath = `/api/notifications?user_id=${user.id}`;
 
-    const [items, branches, categories, events, schedules, users, performance, notifications, dashboard] =
+    const [items, branches, categories, events, schedules, users, performance, notifications, dashboard, checkIns] =
       await Promise.all([
         rawRequest<{ items: Row[] }>('/api/items', undefined, 20000),
         rawRequest<{ branches: Row[] }>('/api/branches', undefined, 20000),
@@ -248,6 +256,7 @@ export async function pullAll(user: OfflineUser): Promise<void> {
         rawRequest<{ performance: Row[] }>(performancePath, undefined, 20000),
         rawRequest<{ notifications: Row[] }>(notificationsPath, undefined, 20000),
         rawRequest<Row>(dashboardPath, undefined, 20000),
+        rawRequest<{ checkIns: Row[] }>('/api/staff/checkins', undefined, 20000),
       ]);
 
     await applyPullData({
@@ -260,6 +269,7 @@ export async function pullAll(user: OfflineUser): Promise<void> {
       schedules: schedules.schedules ?? [],
       performance: performance.performance ?? [],
       notifications: notifications.notifications ?? [],
+      staff_checkins: checkIns.checkIns ?? [],
     });
 
     await Promise.all([

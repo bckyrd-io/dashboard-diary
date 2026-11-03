@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, DateData } from 'react-native-calendars';
 import { api } from '../services/api';
@@ -32,6 +33,7 @@ export default function ScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [error, setError] = useState('');
+  const lastNotified = useRef<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -50,14 +52,19 @@ export default function ScheduleScreen() {
       const notifs = dashRes.notifications ?? [];
       setNotifications(notifs);
 
-      // Trigger local device notifications for new schedule alerts instead of a blocking modal
+      // Trigger local device notifications for new schedule alerts instead of
+      // a blocking modal. Refetches happen on every focus, so only the newest
+      // unseen message is announced (by message text).
       if (notifs.length > 0) {
         const topNotif = notifs[0];
-        sendLocalNotification(
-          'Scheduled Reminder',
-          topNotif.notificationMessage,
-          { count: notifs.length }
-        );
+        if (topNotif.notificationMessage && topNotif.notificationMessage !== lastNotified.current) {
+          lastNotified.current = topNotif.notificationMessage;
+          sendLocalNotification(
+            'Scheduled Reminder',
+            topNotif.notificationMessage,
+            { count: notifs.length }
+          );
+        }
       }
       setError('');
     } catch (err: any) {
@@ -68,7 +75,13 @@ export default function ScheduleScreen() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  // Refresh whenever the screen regains focus so events created on other
+  // screens (Add Event / Add Item) show up without a manual pull.
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   // Build marked dates from events

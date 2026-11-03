@@ -10,6 +10,8 @@ import {
   getNotifications,
   getPerformance,
   getSchedules,
+  getStaff,
+  getStaffCheckIns,
   getUsers,
   offlineStorageReady,
 } from './repository';
@@ -117,6 +119,14 @@ export async function resolveOfflineGet(path: string): Promise<ResolveResult> {
         found: true,
         data: await getPerformance(query.userId ? Number(query.userId) : null),
       };
+    }
+
+    if (pathname === '/api/staff') {
+      return { found: true, data: await getStaff() };
+    }
+
+    if (pathname === '/api/staff/checkins') {
+      return { found: true, data: await getStaffCheckIns(query.staffId ? Number(query.staffId) : null) };
     }
 
     if (pathname === '/api/dashboard') {

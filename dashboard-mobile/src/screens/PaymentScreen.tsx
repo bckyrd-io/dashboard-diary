@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { CreditCard, Smartphone, Banknote, CheckCircle2 } from 'lucide-react-native';
+import { CreditCard, Smartphone, Banknote, CheckCircle2, WifiOff } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useOffline } from '../context/OfflineContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader, Card } from '../components/ui';
@@ -57,21 +58,28 @@ export default function PaymentScreen() {
 
   const { clearCart } = useCart();
   const { user } = useAuth();
+  const { online } = useOffline();
 
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [paying, setPaying] = useState(false);
-  const [paidResult, setPaidResult] = useState<{ reference: string | null; amount: number } | null>(null);
+  const [payStatus, setPayStatus] = useState<string | null>(null);
+  const [paidResult, setPaidResult] = useState<{
+    reference: string | null;
+    amount: number;
+    offline?: boolean;
+  } | null>(null);
 
   const isMobileMoney = paymentMethod === 'tnm_mpamba' || paymentMethod === 'airtel_money';
   const MethodIcon = methodIcons[paymentMethod];
 
   const formatPrice = (price: number) => `MWK ${price.toLocaleString()}`;
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const processPayment = async (reference?: string, description?: string) => {
     setPaying(true);
     try {
-      const result = await api.post<{ success: boolean; event: any; message?: string }>(
+      const result = await api.post<{ success: boolean; event: any; message?: string; offline?: boolean }>(
         '/api/checkout',
         {
           items: items.map((item) => ({
@@ -87,7 +95,11 @@ export default function PaymentScreen() {
       );
       if (result.success) {
         clearCart();
-        setPaidResult({ reference: reference || null, amount: total });
+        setPaidResult({
+          reference: reference || null,
+          amount: total,
+          offline: result.offline === true,
+        });
       } else {
         Alert.alert('Payment Failed', result.message || 'Please try again.');
       }
@@ -97,6 +109,94 @@ export default function PaymentScreen() {
     } finally {
       setPaying(false);
     }
+  };
+
+  // PayChangu Direct Charge: initiate server-side, then poll the status
+  // endpoint (which verifies with the gateway) until it settles. The sale is
+  // recorded by the server only after gateway verification succeeds.
+  const processMobileMoney = async () => {
+    const digits = phone.replace(/\s/g, '');
+    setPaying(true);
+    setPayStatus('Requesting payment from PayChangu…');
+
+    let chargeId: string;
+    try {
+      const init = await api.post<{ success: boolean; chargeId?: string; message?: string }>(
+        '/api/payments/initiate',
+        {
+          amount: total,
+          mobile: digits,
+          paymentMethod,
+          items: items.map((item) => ({
+            itemId: item.itemId,
+            quantity: item.quantity,
+            unitPriceAtSale: item.price,
+          })),
+          description: `Sale - ${items.length} item(s) [${methodLabels[paymentMethod]} ${digits}]`,
+          userId: user?.id,
+        }
+      );
+      if (!init?.success || !init.chargeId) {
+        throw new Error(init?.message || 'Could not start the payment.');
+      }
+      chargeId = init.chargeId;
+    } catch (error: any) {
+      setPaying(false);
+      setPayStatus(null);
+      Alert.alert('Payment Failed', error?.message || 'Could not start the payment. Please try again.');
+      return;
+    }
+
+    // Poll: ~2 minutes max. The status route re-verifies with PayChangu and
+    // fulfills (records) the sale only on a gateway-confirmed success.
+    const maxAttempts = 40;
+    let verdict: 'success' | 'failed' | 'timeout' = 'timeout';
+    let reference: string | null = chargeId;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      setPayStatus(
+        attempt < 3
+          ? 'Ask the customer to approve the prompt on their phone…'
+          : 'Waiting for PayChangu confirmation…'
+      );
+      try {
+        const status = await api.get<{ success: boolean; status?: string; reference?: string }>(
+          `/api/payments/status?chargeId=${encodeURIComponent(chargeId)}`
+        );
+        if (status?.status === 'success') {
+          verdict = 'success';
+          reference = status.reference || chargeId;
+          break;
+        }
+        if (status?.status === 'failed') {
+          verdict = 'failed';
+          break;
+        }
+      } catch {
+        // Transient network error while polling — keep trying until the cap.
+      }
+      await sleep(3000);
+    }
+
+    setPaying(false);
+    setPayStatus(null);
+
+    if (verdict === 'success') {
+      clearCart();
+      setPaidResult({ reference, amount: total });
+      return;
+    }
+    if (verdict === 'failed') {
+      Alert.alert(
+        'Payment Not Completed',
+        'The payment was declined or cancelled. No money was taken — please try again.'
+      );
+      return;
+    }
+    Alert.alert(
+      'Payment Still Pending',
+      'PayChangu has not confirmed this payment yet. It may still complete — check the transaction again shortly.'
+    );
   };
 
   const validatePhone = (value: string) => {
@@ -114,13 +214,21 @@ export default function PaymentScreen() {
   };
 
   const handlePay = () => {
+    if (items.length === 0) {
+      Alert.alert('Empty Cart', 'Please add items to the cart before checkout.');
+      return;
+    }
     if (isMobileMoney) {
+      // Hard offline gate: mobile money always needs the gateway.
+      if (!online) {
+        Alert.alert(
+          'Offline',
+          'Mobile money payments need an internet connection. Go back and choose Cash to save this sale offline.'
+        );
+        return;
+      }
       if (!validatePhone(phone)) return;
-      const digits = phone.replace(/\s/g, '');
-      processPayment(
-        `MOMO-${digits}`,
-        `Sale - ${items.length} item(s) [${methodLabels[paymentMethod]} ${digits}]`
-      );
+      processMobileMoney();
     } else {
       processPayment();
     }
@@ -139,9 +247,14 @@ export default function PaymentScreen() {
           <View style={styles.successIconCircle}>
             <CheckCircle2 size={56} color="#16a34a" />
           </View>
-          <Text style={styles.successTitle}>Payment Successful</Text>
+          <Text style={styles.successTitle}>
+            {paidResult.offline ? 'Saved Offline' : 'Payment Successful'}
+          </Text>
           <Text style={styles.successAmount}>{formatPrice(paidResult.amount)}</Text>
           <Text style={styles.successMethod}>{methodLabels[paymentMethod]}</Text>
+          {paidResult.offline ? (
+            <Text style={styles.offlineNote}>Will sync to the server when you reconnect.</Text>
+          ) : null}
           {paidResult.reference ? (
             <Text style={styles.successRef}>Ref: {paidResult.reference}</Text>
           ) : null}
@@ -199,6 +312,15 @@ export default function PaymentScreen() {
             <Text style={styles.inputHint}>
               {methodLabels[paymentMethod]} number to charge
             </Text>
+            {!online && (
+              <View style={styles.offlineBanner}>
+                <WifiOff size={16} color={Theme.destructive} />
+                <Text style={styles.offlineBannerText}>
+                  You're offline — mobile money is unavailable. Go back and choose Cash to save this
+                  sale offline.
+                </Text>
+              </View>
+            )}
             <View style={[styles.phoneInputRow, phoneError ? styles.phoneInputError : null]}>
               <Text style={styles.phonePrefix}>+265</Text>
               <TextInput
@@ -231,21 +353,32 @@ export default function PaymentScreen() {
 
         {/* Pay button */}
         <TouchableOpacity
-          style={[styles.payButton, (paying || items.length === 0) && styles.payButtonDisabled]}
+          style={[
+            styles.payButton,
+            (paying || items.length === 0 || (!online && isMobileMoney)) && styles.payButtonDisabled,
+          ]}
           onPress={handlePay}
-          disabled={paying || items.length === 0}
+          disabled={paying || items.length === 0 || (!online && isMobileMoney)}
         >
           {paying ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
               <CreditCard size={20} color="#fff" />
-              <Text style={styles.payButtonText}>Pay with PayChangu</Text>
+              <Text style={styles.payButtonText}>
+                {isMobileMoney ? 'Pay with PayChangu' : 'Confirm Cash Payment'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
 
-        <Text style={styles.secureNote}>You will not be charged until you tap the pay button.</Text>
+        {payStatus ? <Text style={styles.payStatus}>{payStatus}</Text> : null}
+
+        <Text style={styles.secureNote}>
+          {isMobileMoney
+            ? 'The sale is recorded only after PayChangu confirms the payment.'
+            : 'You will not be charged until you tap the pay button.'}
+        </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -306,6 +439,31 @@ const styles = StyleSheet.create({
     color: Theme.foreground,
   },
   errorText: { fontSize: 12, color: Theme.destructive, marginTop: 6 },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: Theme.radius,
+    padding: 10,
+    marginBottom: 10,
+  },
+  offlineBannerText: { flex: 1, fontSize: 12, color: Theme.destructive, lineHeight: 17 },
+  payStatus: {
+    fontSize: 13,
+    color: Theme.mutedForeground,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  offlineNote: {
+    fontSize: 13,
+    color: '#B45309',
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+  },
   cashCard: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -66,7 +66,7 @@ class NfcService {
     }
   }
 
-  async readProductTag(): Promise<ProductTagResult> {
+  async readProductTag(timeoutMs = 12000): Promise<ProductTagResult> {
     const isReady = await this.isSupported();
     if (!isReady || !NfcManager) {
       return {
@@ -76,8 +76,38 @@ class NfcService {
       };
     }
 
+    // NFC switched off would otherwise spin forever waiting for a tag.
+    const enabled = await this.isEnabled();
+    if (!enabled) {
+      return {
+        success: false,
+        error: 'NFC is turned off. Enable NFC in your device settings and try again.',
+      };
+    }
+
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     try {
-      await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA]);
+      const request = NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA]);
+      // If the timeout wins and we cancel the session, this promise rejects —
+      // swallow it so it never surfaces as an unhandled rejection.
+      request.catch(() => undefined);
+
+      // No tag presented (or NFC unavailable at the OS level) must not hang
+      // the spinner — race the request against a timeout and cancel cleanly.
+      const raced = await Promise.race([
+        request.then(() => 'ok' as const),
+        new Promise<'timeout'>((resolve) => {
+          timeoutHandle = setTimeout(() => resolve('timeout'), timeoutMs);
+        }),
+      ]);
+
+      if (raced === 'timeout') {
+        return {
+          success: false,
+          error: 'No NFC tag detected. Please try again later.',
+        };
+      }
+
       const tag = await NfcManager.getTag();
       const tagId = tag?.id ? String(tag.id).trim() : '';
       const payload = tag?.ndefMessage ? JSON.stringify(tag.ndefMessage) : undefined;
@@ -105,6 +135,9 @@ class NfcService {
         error: err?.message || 'Failed to read product tag.',
       };
     } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      // Cancel the pending requestTechnology too — it resolves via the
+      // catch path in the library once cancelled, which is harmless here.
       this.cancelSession();
     }
   }

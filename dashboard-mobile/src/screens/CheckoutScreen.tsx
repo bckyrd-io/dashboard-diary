@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useCart, CartItem } from '../context/CartContext';
+import { useOffline } from '../context/OfflineContext';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 
@@ -44,6 +45,7 @@ interface SaleEvent {
 export default function CheckoutScreen() {
   const navigation = useNavigation();
   const { items, total, itemCount, updateQuantity, removeItem, setCart, clearCart } = useCart();
+  const { online } = useOffline();
   const [loading, setLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
   const [pastSales, setPastSales] = useState<SaleEvent[]>([]);
@@ -56,6 +58,15 @@ export default function CheckoutScreen() {
   ];
 
   const formatPrice = (price: number) => `MWK ${price.toLocaleString()}`;
+
+  // Offline: only cash can proceed — mobile money needs the gateway.
+  const isMobileMoney = (method: PaymentMethod) => method !== 'cash';
+  const methodDisabledOffline = (method: PaymentMethod) => !online && isMobileMoney(method);
+
+  // If we went offline with mobile money selected, fall back to cash.
+  React.useEffect(() => {
+    if (!online && isMobileMoney(selectedPayment)) setSelectedPayment('cash');
+  }, [online, selectedPayment]);
 
   const fetchPastSales = async () => {
     try {
@@ -116,6 +127,13 @@ export default function CheckoutScreen() {
   const handleCheckout = () => {
     if (items.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to the cart before checkout.');
+      return;
+    }
+    if (!online && isMobileMoney(selectedPayment)) {
+      Alert.alert(
+        'Offline',
+        'Mobile money needs an internet connection. Switch to Cash to save this sale offline.'
+      );
       return;
     }
     if (editingSaleId) {
@@ -330,28 +348,42 @@ export default function CheckoutScreen() {
               <View style={styles.paymentMethods}>
                 {paymentMethods.map((method) => {
                   const Icon = method.icon;
+                  const disabled = methodDisabledOffline(method.id);
+                  const active = selectedPayment === method.id;
                   return (
                     <TouchableOpacity
                       key={method.id}
                       style={[
                         styles.paymentOption,
-                        selectedPayment === method.id && styles.paymentOptionActive,
+                        active && styles.paymentOptionActive,
+                        disabled && styles.paymentOptionDisabled,
                       ]}
-                      onPress={() => setSelectedPayment(method.id)}
+                      onPress={() => {
+                        if (disabled) return;
+                        setSelectedPayment(method.id);
+                      }}
+                      disabled={disabled}
                     >
-                      <Icon size={20} color={selectedPayment === method.id ? Theme.primary : Theme.gray500} />
+                      <Icon size={20} color={active ? Theme.primary : disabled ? Theme.gray400 : Theme.gray500} />
                       <Text
                         style={[
                           styles.paymentOptionText,
-                          selectedPayment === method.id && styles.paymentOptionTextActive,
+                          active && styles.paymentOptionTextActive,
+                          disabled && styles.paymentOptionTextDisabled,
                         ]}
                       >
                         {method.label}
+                        {disabled ? ' (offline)' : ''}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
+              {!online && (
+                <Text style={styles.offlinePaymentNote}>
+                  Offline — only Cash can be saved now. Mobile money unlocks when you reconnect.
+                </Text>
+              )}
 
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total ({itemCount} items)</Text>
@@ -494,8 +526,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   paymentOptionActive: { borderColor: Theme.primary, backgroundColor: Theme.primaryLight },
+  paymentOptionDisabled: { opacity: 0.5 },
   paymentOptionText: { fontSize: 12, color: Theme.gray600 },
   paymentOptionTextActive: { color: Theme.primary, fontWeight: '600' },
+  paymentOptionTextDisabled: { color: Theme.gray400 },
+  offlinePaymentNote: {
+    fontSize: 12,
+    color: Theme.gray500,
+    marginTop: -8,
+    marginBottom: 16,
+  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

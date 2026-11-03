@@ -320,6 +320,18 @@ export async function createEventLocal(payload: Row, clientOpId: string) {
     event.toBranchId as number | null
   );
 
+  // Calendar sync (mirrors POST /api/events): dated non-sale events show up
+  // on Schedule screens; sales are history created by checkout.
+  if (payload.eventType !== 'sale' && String(event.date) >= today()) {
+    await insertRow('schedules', {
+      id: await nextTempId('schedules'),
+      activityId: eventId,
+      scheduledDate: event.date,
+      notificationMessage: `Upcoming: ${event.description}`,
+      createdAt: nowIso(),
+    });
+  }
+
   return { success: true as const, event, offline: true };
 }
 
@@ -427,7 +439,9 @@ export async function createActivityLocal(payload: Row, clientOpId: string) {
 
   await insertRow('events', event);
 
-  if (new Date(activityDate) > new Date()) {
+  // Calendar rule must match the server: activities dated today or later get
+  // a schedule row (string compare, no timezone-shifting Date parsing).
+  if (activityDate >= today()) {
     await insertRow('schedules', {
       id: await nextTempId('schedules'),
       activityId: eventId,
@@ -465,4 +479,30 @@ export async function createPerformanceLocal(payload: Row) {
 
   await insertRow('performance', row);
   return { success: true as const, performance: [row], offline: true };
+}
+
+// ------------------------------------------------------------------ staff
+
+export async function createCheckinLocal(payload: Row) {
+  const staffId = Number(payload.staffId);
+  const tagId = String(payload.tagId ?? '').trim();
+  if (!staffId || !tagId) throw new Error('staffId and tagId are required');
+
+  const timestamp = payload.timestamp ? String(payload.timestamp) : nowIso();
+  const checkIn: Row = {
+    id: await nextTempId('staff_checkins'),
+    staffId,
+    tagId,
+    workstationId: payload.workstationId != null ? Number(payload.workstationId) : null,
+    timestamp,
+    createdAt: nowIso(),
+  };
+
+  await insertRow('staff_checkins', checkIn);
+  return {
+    success: true as const,
+    checkIn,
+    offline: true,
+    message: 'Check-in saved offline, will sync',
+  };
 }

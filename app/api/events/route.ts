@@ -1,7 +1,14 @@
 import { db } from '../../../drizzle/db';
-import { eventsTable, eventItemsTable, itemsTable, branchesTable } from '../../../drizzle/db/schema';
+import { eventsTable, eventItemsTable, itemsTable, branchesTable, schedulesTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq, and, or, SQL, sql } from 'drizzle-orm';
+
+// Events dated today or later also appear on the calendar via a schedule row.
+function isSchedulable(date?: string): boolean {
+  if (!date) return false;
+  const today = new Date().toISOString().split('T')[0];
+  return date >= today;
+}
 
 export async function GET(req: Request) {
   try {
@@ -111,6 +118,16 @@ export async function POST(req: Request) {
         clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();
+
+    // Calendar sync: dated events (today or future) show up on Schedule screens.
+    // Skipped for sales — checkout creates those after payment and they're history.
+    if (eventType !== 'sale' && isSchedulable(date || new Date().toISOString().split('T')[0])) {
+      await db.insert(schedulesTable).values({
+        activityId: newEvent[0].id,
+        scheduledDate: date || new Date().toISOString().split('T')[0],
+        notificationMessage: `Upcoming: ${newEvent[0].description}`,
+      });
+    }
 
     // Insert event items if provided
     if (items && items.length > 0) {

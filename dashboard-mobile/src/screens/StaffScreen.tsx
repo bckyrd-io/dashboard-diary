@@ -20,7 +20,6 @@ import {
   getSales,
   addCheckIn,
   findWorkstationByTag,
-  ensureEmployeeForUsername,
   Employee,
 } from '../services/staffData';
 import { useAuth } from '../context/AuthContext';
@@ -59,13 +58,17 @@ export default function StaffScreen() {
     try {
       const [emps, wss, cis, ss] = await Promise.all([getEmployees(), getWorkstations(), getCheckIns(), getSales()]);
       let loadedEmployees = emps || [];
-      // Non-admin: make sure their own employee card exists so it can be shown
+      // Non-admin: make sure their own card is visible even if the staff
+      // list request failed (built from the real logged-in user, id included)
       if (user?.role?.trim().toLowerCase() !== 'admin' && user?.username) {
         const hasOwn = loadedEmployees.some(
           (e: Employee) => e.username?.toLowerCase() === user.username.toLowerCase()
         );
         if (!hasOwn) {
-          loadedEmployees = [...loadedEmployees, ensureEmployeeForUsername(user.username)];
+          loadedEmployees = [
+            ...loadedEmployees,
+            { id: user.id, username: user.username, fullName: user.username },
+          ];
         }
       }
       setEmployees(loadedEmployees);
@@ -103,31 +106,23 @@ export default function StaffScreen() {
       }
 
       const tagId = String(result.tagId ?? readValue).trim();
-      setScanStatus({ type: 'success', message: `Read NFC: ${tagId}${result.payload ? ` • ${result.payload}` : ''}` });
 
-      // Find workstation by tag; if tag belongs to workstation, associate
+      // Find workstation by tag; unknown tags are auto-registered server-side
       const ws = await findWorkstationByTag(tagId);
 
-      // Determine staff performing scan: prefer logged-in user
-      let staffId: number;
-      if (user?.id) {
-        // try to find employee with same numeric id
-        const emp = employees.find((e) => e.id === user.id);
-        if (emp) {
-          staffId = emp.id;
-        } else {
-          // ensure employee exists for username
-          const ensured = ensureEmployeeForUsername(user.username);
-          staffId = ensured.id;
-        }
-      } else {
-        // Unknown user -> create/ensure by generic name
-        const ensured = ensureEmployeeForUsername('unknown');
-        staffId = ensured.id;
+      // The check-in is attributed to the logged-in user's real account id
+      if (!user?.id) {
+        setScanStatus({ type: 'error', message: 'Log in to record a check-in.' });
+        return;
       }
+      const staffId = user.id;
 
       // Add check-in
       await addCheckIn(staffId, tagId, ws?.id);
+      setScanStatus({
+        type: 'success',
+        message: `Check-in recorded for ${user.username}${ws?.name ? ` at ${ws.name}` : ` (tag ${tagId})`}`,
+      });
 
       // refresh local state
       await loadAll();

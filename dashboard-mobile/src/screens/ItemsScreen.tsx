@@ -33,15 +33,15 @@ interface Item {
   branchId: number | null;
 }
 
-const DEFAULT_CATEGORIES = ['All', 'Office Shoes', 'Casual Shoes', 'Sports Shoes', 'Designer Shoes'];
-
 export default function ItemsScreen() {
   const navigation = useNavigation();
   const { addItem } = useCart();
   const { width: windowWidth } = useWindowDimensions();
 
   const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  // Categories are fully dynamic: chips come from the persisted catalog, with
+  // items' subCategory used only as an offline/error fallback. No hardcoded rows.
+  const [categories, setCategories] = useState<string[]>(['All']);
   const categoriesFromApi = useRef(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,8 +111,9 @@ export default function ItemsScreen() {
       const result = await api.get<{ success: boolean; categories: { name: string }[] }>(
         '/api/categories'
       );
-      if (result.success && result.categories.length > 0) {
-        // Persisted catalog is the source of truth; items' subCategory is only a fallback
+      if (result.success) {
+        // Persisted catalog is the source of truth — applied even when empty
+        // so stale/hardcoded chips never linger after a data reset.
         setCategories(['All', ...result.categories.map((c) => c.name)]);
         categoriesFromApi.current = true;
       }

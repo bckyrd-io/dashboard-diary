@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   Image,
   FlatList,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { Package, ImagePlus, Trash2, Check, Search, Plus, X } from 'lucide-react-native';
+import { Package, ImagePlus, Trash2, Check, Search, Plus, X, Calendar } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader } from '../components/ui';
@@ -57,6 +59,21 @@ const FINANCIAL_TYPE_OPTIONS: SelectOption[] = [
   { value: 'Expense', label: 'Expense' },
   { value: 'Neutral', label: 'Neutral' },
 ];
+
+// YYYY-MM-DD <-> Date without timezone shifting (the picker works in local
+// time, while toISOString would round-trip to UTC and shift the day).
+function parseDateString(value: string): Date {
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return new Date();
+  return new Date(y, m - 1, d);
+}
+
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 // Financial type implied by the selected event type (still overridable)
 const DEFAULT_FINANCIAL_BY_EVENT: Record<string, string> = {
@@ -131,6 +148,7 @@ export default function AddItemScreen() {
   const [eventType, setEventType] = useState('sale');
   const [financialType, setFinancialType] = useState('Revenue');
   const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Dynamic categories loaded from the catalog, so newly created categories appear too
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
@@ -529,15 +547,39 @@ export default function AddItemScreen() {
             />
             <View style={styles.field}>
               <Text style={styles.label}>Date</Text>
-              <TextInput
-                style={styles.input}
-                value={eventDate}
-                onChangeText={setEventDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Theme.gray400}
-                autoCapitalize="none"
-              />
-              <Text style={styles.hint}>Defaults to today · format YYYY-MM-DD</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.datePickerValue}>{eventDate}</Text>
+                <Calendar size={18} color={Theme.primary} />
+              </TouchableOpacity>
+              {showDatePicker && (
+                <View style={styles.datePickerWrap}>
+                  <DateTimePicker
+                    value={parseDateString(eventDate)}
+                    mode="date"
+                    presentation="dialog"
+                    onValueChange={(_event, selected) => {
+                      if (selected) setEventDate(toDateString(selected));
+                      // The Android dialog must unmount after a selection;
+                      // iOS renders inline so it stays until Done.
+                      if (Platform.OS === 'android') setShowDatePicker(false);
+                    }}
+                    onDismiss={() => setShowDatePicker(false)}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={styles.datePickerDone}
+                      onPress={() => setShowDatePicker(false)}
+                    >
+                      <Text style={styles.datePickerDoneText}>Done</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+              <Text style={styles.hint}>Defaults to today · tap to pick from the calendar</Text>
             </View>
           </>
         )}
@@ -684,6 +726,34 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.muted,
     color: Theme.foreground,
     fontSize: 15,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: Theme.border,
+    borderRadius: Theme.radius,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: Theme.muted,
+  },
+  datePickerValue: {
+    fontSize: 15,
+    color: Theme.foreground,
+  },
+  datePickerWrap: {
+    marginTop: 8,
+  },
+  datePickerDone: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  datePickerDoneText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.primary,
   },
   hint: {
     fontSize: 12,

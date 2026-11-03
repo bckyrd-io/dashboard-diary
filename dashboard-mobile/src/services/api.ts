@@ -30,6 +30,7 @@ function queueable(method: string, path: string): boolean {
       '/api/events',
       '/api/activities',
       '/api/performance',
+      '/api/staff/checkin',
     ].includes(clean);
   }
 
@@ -96,6 +97,14 @@ async function applyLocalMutation(
       queue: result.duplicate
         ? null
         : { entity: 'performance', localId: Number(result.performance[0].id) },
+    };
+  }
+
+  if (method === 'POST' && clean === '/api/staff/checkin') {
+    const result = await local.createCheckinLocal(body);
+    return {
+      result,
+      queue: { entity: 'staff_checkins', localId: Number(result.checkIn.id) },
     };
   }
 

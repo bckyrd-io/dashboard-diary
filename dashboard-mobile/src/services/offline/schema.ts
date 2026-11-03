@@ -1,7 +1,7 @@
 // SQLite schema for the mobile offline mirror.
 // Mirrors the Postgres tables used by the API (users excludes password hashes)
 // plus the sync bookkeeping tables.
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS branches (
@@ -102,6 +102,15 @@ CREATE TABLE IF NOT EXISTS notifications (
   createdAt TEXT
 );
 
+CREATE TABLE IF NOT EXISTS staff_checkins (
+  id INTEGER PRIMARY KEY,
+  staffId INTEGER,
+  tagId TEXT,
+  workstationId INTEGER,
+  timestamp TEXT,
+  createdAt TEXT
+);
+
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   method TEXT NOT NULL,
@@ -196,4 +205,5 @@ export const TABLE_COLUMNS: Record<string, string[]> = {
     'relatedItemId',
     'createdAt',
   ],
+  staff_checkins: ['id', 'staffId', 'tagId', 'workstationId', 'timestamp', 'createdAt'],
 };

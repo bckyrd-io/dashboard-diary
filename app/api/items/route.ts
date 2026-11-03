@@ -1,7 +1,17 @@
 import { db } from '../../../drizzle/db';
-import { itemsTable } from '../../../drizzle/db/schema';
+import { itemsTable, branchesTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { eq, ilike, and, SQL } from 'drizzle-orm';
+import { eq, ilike, and, SQL, sql } from 'drizzle-orm';
+
+// Items created without an explicit branch (mobile Add Item, offline replays)
+// belong to the default branch — the first one that was registered.
+async function defaultBranchId(): Promise<number | null> {
+  const rows = await db
+    .select({ id: sql<number>`coalesce(min(${branchesTable.id}), 0)` })
+    .from(branchesTable);
+  const id = Number(rows[0]?.id ?? 0);
+  return id > 0 ? id : null;
+}
 
 export async function GET(req: Request) {
   try {
@@ -70,7 +80,7 @@ export async function POST(req: Request) {
         unit,
         reorderThreshold: reorderThreshold ? Number(reorderThreshold) : undefined,
         imageUrl,
-        branchId: branchId ? Number(branchId) : undefined,
+        branchId: branchId ? Number(branchId) : await defaultBranchId(),
         clientOpId: clientOpId ? String(clientOpId) : undefined,
       })
       .returning();

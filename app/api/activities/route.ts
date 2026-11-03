@@ -3,6 +3,14 @@ import { eventsTable, schedulesTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
+// A schedule row is created for activities dated today or later.
+// Comparing the YYYY-MM-DD strings avoids timezone shifting from Date parsing.
+function isSchedulable(activityDate?: string): boolean {
+  if (!activityDate) return false;
+  const today = new Date().toISOString().split('T')[0];
+  return activityDate >= today;
+}
+
 export async function POST(req: Request) {
   const { description, activityType, amount, activityDate, clientOpId } = await req.json();
 
@@ -32,7 +40,7 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    if (new Date(activityDate) > new Date()) {
+    if (isSchedulable(activityDate)) {
       await db.insert(schedulesTable).values({
         activityId: newActivity[0].id,
         scheduledDate: activityDate,

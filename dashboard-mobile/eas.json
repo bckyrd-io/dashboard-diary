@@ -12,6 +12,16 @@
         "EXPO_PUBLIC_API_URL": "https://next-type-bckyrd-project.vercel.app"
       }
     },
+    "preview-lan": {
+      "name": "Dashboard Mobile (LAN)",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.105:3000"
+      }
+    },
     "production": {
       "distribution": "store",
       "android": {
