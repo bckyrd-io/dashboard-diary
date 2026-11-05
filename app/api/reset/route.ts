@@ -23,18 +23,13 @@ import {
 //   Body: { "confirm": true }
 //
 // Optional body fields: { "branchName": "...", "username": "...", "password": "..." }
-const ALL_TABLES = [
-  'event_items',
-  'schedules',
-  'performance',
-  'notifications',
-  'payments',
-  'events',
-  'items',
-  'categories',
-  'users',
-  'branches',
-] as const;
+//
+// The wipe uses a single TRUNCATE ... RESTART IDENTITY CASCADE over every
+// table in the public schema instead of ordered DELETEs: TRUNCATE ignores
+// foreign-key ordering entirely (an earlier DELETE-based version failed on
+// payments.event_id when production still ran older code), restarts every
+// identity sequence so the new admin lands on id 1, and CASCADE also clears
+// legacy tables (workstations, staff_checkins) that reference these tables.
 
 export async function POST(req: Request) {
   try {
@@ -79,20 +74,26 @@ export async function POST(req: Request) {
     const counts: Record<string, number> = {};
 
     await db.transaction(async (tx) => {
-      for (const table of ALL_TABLES) {
-        const res = await tx.execute(sql`DELETE FROM ${sql.identifier(table)}`);
-        counts[table] = Number((res as { rowCount?: number }).rowCount ?? 0);
+      // Discover every public table at runtime so the wipe works on both the
+      // local DB and production even if one of them still has legacy tables.
+      const tableRows = await tx.execute<{ tablename: string }>(
+        sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`
+      );
+      const tables = (tableRows.rows ?? []).map((r) => r.tablename);
+      if (tables.length === 0) {
+        throw new Error('No tables found in the public schema');
       }
 
-      // Reset identity sequences BEFORE reseeding so the default branch and admin
-      // land on id 1 (and `?userId=1` stays valid on every future reset).
-      // NOTE: pg_get_serial_sequence's first argument must be a *string literal*
-      // ('event_items'), not an identifier — passing sql.identifier() there makes
-      // Postgres read the table name as a column reference and the tx aborts.
-      for (const table of ALL_TABLES) {
-        await tx.execute(
-          sql`SELECT setval(pg_get_serial_sequence(${sql.raw(`'${table}'`)}, 'id'), COALESCE((SELECT MAX(id) FROM ${sql.identifier(table)}), 0) + 1, false)`
-        );
+      const truncateSql = sql.join(
+        tables.map((t) => sql.identifier(t)),
+        sql`, `
+      );
+      await tx.execute(sql`TRUNCATE ${truncateSql} RESTART IDENTITY CASCADE`);
+
+      // Count what is left (everything should be 0) for the response body.
+      for (const table of tables) {
+        const res = await tx.execute(sql`SELECT count(*)::int AS n FROM ${sql.identifier(table)}`);
+        counts[table] = Number((res.rows?.[0] as { n?: number } | undefined)?.n ?? 0);
       }
 
       // Reinsert a default branch first — users.branch_id references it.
