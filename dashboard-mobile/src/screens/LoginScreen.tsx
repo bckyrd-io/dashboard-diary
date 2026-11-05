@@ -16,6 +16,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader } from '../components/ui';
+import { ServerConfig } from '../components/ServerConfig';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -52,6 +53,9 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={[styles.centered, { width: isDesktopOrTablet ? '70%' : '100%' }]}>
+
+          {/* LAN build: locate/enter the API server before signing in */}
+          <ServerConfig />
 
           {/* Card */}
           <View style={styles.card}>

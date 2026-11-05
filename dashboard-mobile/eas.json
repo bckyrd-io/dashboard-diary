@@ -17,14 +17,12 @@
       "android": {
         "buildType": "apk"
       },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.105:3000"
-      }
+      "description": "Local-network build: the app discovers the API server on your LAN at runtime (no baked URL)."
     },
     "production": {
       "distribution": "store",
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://next-type-bckyrd-project.vercel.app"
