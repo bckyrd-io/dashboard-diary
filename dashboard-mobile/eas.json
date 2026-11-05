@@ -16,8 +16,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "description": "Local-network build: the app discovers the API server on your LAN at runtime (no baked URL)."
+      }
     },
     "production": {
       "distribution": "store",
