@@ -219,7 +219,7 @@ export default function BranchesScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          ) : null
+          ) : undefined
         }
         renderItem={({ item }) => {
           const isSource = sourceBranchId !== null && Number(item.id) === Number(sourceBranchId);

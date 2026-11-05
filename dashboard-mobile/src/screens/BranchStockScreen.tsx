@@ -383,7 +383,7 @@ export default function BranchStockScreen() {
                 );
               })}
             </View>
-          ) : null
+          ) : undefined
         }
       />
     </SafeAreaView>

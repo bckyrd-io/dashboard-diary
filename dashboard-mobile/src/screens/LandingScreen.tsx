@@ -9,6 +9,7 @@ import {
   ImageSourcePropType,
   useWindowDimensions,
 } from 'react-native';
+import type { ScrollViewInstance, ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { HelpCircle, ShoppingBag } from 'lucide-react-native';
@@ -30,16 +31,18 @@ export default function LandingScreen() {
   const navigation = useNavigation();
   const { width: windowWidth } = useWindowDimensions();
   const isDesktopOrTablet = windowWidth >= 768;
-  const scrollRef = useRef<ScrollView>(null);
-  const helpRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const helpRef = useRef<ViewInstance>(null);
 
   const handleGetStarted = () => {
     navigation.navigate('Login' as never);
   };
 
   const scrollToHelp = () => {
+    const relativeTo = scrollRef.current;
+    if (!relativeTo) return;
     helpRef.current?.measureLayout(
-      scrollRef.current as any,
+      relativeTo,
       (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(y - 16, 0), animated: true }),
       () => {}
     );

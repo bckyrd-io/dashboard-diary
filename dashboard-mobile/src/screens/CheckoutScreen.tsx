@@ -476,7 +476,7 @@ export default function CheckoutScreen() {
             </View>
           )
         }
-        ListEmptyComponent={null}
+        ListEmptyComponent={undefined}
       />
 
       {/* Past Sales Section */}

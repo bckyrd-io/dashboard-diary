@@ -99,7 +99,7 @@ export async function exportServerBackup(userId: number): Promise<void> {
   const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();
   file.create();
-  file.write(JSON.stringify(backup, null, 2));
+  await file.write(JSON.stringify(backup, null, 2));
 
   try {
     await Sharing.shareAsync(file.uri, {
