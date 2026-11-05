@@ -1,7 +1,7 @@
 import { db } from '../../../../drizzle/db';
-import { usersTable, staffCheckinsTable } from '../../../../drizzle/db/schema';
+import { usersTable, performanceTable } from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -12,10 +12,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
 
     const latest = await db
-      .select({ workstationId: staffCheckinsTable.workstationId })
-      .from(staffCheckinsTable)
-      .where(eq(staffCheckinsTable.staffId, Number(id)))
-      .orderBy(desc(staffCheckinsTable.timestamp))
+      .select({ workstationId: performanceTable.workstationId })
+      .from(performanceTable)
+      .where(and(eq(performanceTable.type, 'checkin'), eq(performanceTable.userId, Number(id))))
+      .orderBy(desc(performanceTable.timestamp))
       .limit(1);
 
     const u = rows[0];

@@ -17,7 +17,8 @@ import {
   usersTable,
 } from '../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { assertStockAvailable, deductStock } from './stock';
 
 const OPERATOR_REF_IDS: Record<string, string> = {
   airtel_money: '20be6c20-adeb-4b5b-a7ba-0769820df4fb', // Airtel Money
@@ -101,6 +102,10 @@ export interface InitiateInput {
 export async function initiateMomoCharge(input: InitiateInput) {
   const operatorRef = OPERATOR_REF_IDS[input.paymentMethod];
   if (!operatorRef) throw new Error('Unsupported mobile money method');
+
+  // Never charge a customer for stock we can't deliver — validate the whole
+  // cart before the payment intent even exists. Throws StockError (409).
+  await assertStockAvailable(input.items ?? []);
 
   // Store the intent first so the payment exists even if the gateway call fails
   // mid-flight (the customer can then be told to retry without ambiguity).
@@ -219,74 +224,82 @@ export async function fulfillPayment(chargeId: string) {
   let eventId = existingEvent?.id;
 
   if (!eventId) {
-    const newEvent = await db
-      .insert(eventsTable)
-      .values({
-        eventType: 'sale',
-        financialType: 'Revenue',
-        description: payment.description || `Sale - ${items.length} item(s)`,
-        amount: totalAmount,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: payment.paymentMethod,
-        paymentReference: payment.gatewayReference || chargeId,
-        paymentStatus: 'success',
-        clientOpId: chargeId,
-      })
-      .returning();
-    eventId = newEvent[0].id;
+    // All-or-nothing: validate stock, then write the sale + line items +
+    // guarded deductions together. If stock ran out between charge and
+    // fulfillment this throws (payment stays pending, retried by polling)
+    // instead of recording a negative balance.
+    const newEvent = await db.transaction(async (tx) => {
+      await assertStockAvailable(items, {}, tx);
 
-    if (payment.userId) {
-      const sellingUser = await db
-        .select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.id, Number(payment.userId)))
-        .limit(1);
-      if (sellingUser.length > 0) {
-        await db.insert(performanceTable).values({
-          userId: sellingUser[0].id,
-          activityId: eventId,
-          status: 'Completed',
-        });
-      }
-    }
+      const inserted = await tx
+        .insert(eventsTable)
+        .values({
+          eventType: 'sale',
+          financialType: 'Revenue',
+          description: payment.description || `Sale - ${items.length} item(s)`,
+          amount: totalAmount,
+          date: new Date().toISOString().split('T')[0],
+          paymentMethod: payment.paymentMethod,
+          paymentReference: payment.gatewayReference || chargeId,
+          paymentStatus: 'success',
+          clientOpId: chargeId,
+        })
+        .returning();
 
-    for (const item of items) {
-      await db.insert(eventItemsTable).values({
-        eventId,
-        itemId: Number(item.itemId),
-        quantity: Number(item.quantity),
-        unitPriceAtSale: Number(item.unitPriceAtSale || 0),
-      });
-      await db
-        .update(itemsTable)
-        .set({ quantity: sql`quantity - ${Number(item.quantity)}` })
-        .where(eq(itemsTable.id, Number(item.itemId)));
-    }
-
-    // Low-stock notifications (same behaviour as /api/checkout)
-    for (const item of items) {
-      const itemData = await db
-        .select()
-        .from(itemsTable)
-        .where(eq(itemsTable.id, Number(item.itemId)))
-        .limit(1);
-      if (
-        itemData[0] &&
-        itemData[0].reorderThreshold &&
-        itemData[0].quantity <= itemData[0].reorderThreshold
-      ) {
-        const admins = await db.select().from(usersTable).where(eq(usersTable.role, 'admin'));
-        for (const admin of admins) {
-          await db.insert(notificationsTable).values({
-            userId: admin.id,
-            type: 'low_stock',
-            title: 'Low Stock Alert',
-            body: `${itemData[0].name} is running low (${itemData[0].quantity} remaining)`,
-            relatedItemId: Number(item.itemId),
+      if (payment.userId) {
+        const sellingUser = await tx
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.id, Number(payment.userId)))
+          .limit(1);
+        if (sellingUser.length > 0) {
+          await tx.insert(performanceTable).values({
+            userId: sellingUser[0].id,
+            activityId: inserted[0].id,
+            status: 'Completed',
           });
         }
       }
-    }
+
+      for (const item of items) {
+        await tx.insert(eventItemsTable).values({
+          eventId: inserted[0].id,
+          itemId: Number(item.itemId),
+          quantity: Number(item.quantity),
+          unitPriceAtSale: Number(item.unitPriceAtSale || 0),
+        });
+        await deductStock(tx, Number(item.itemId), Number(item.quantity));
+      }
+
+      // Low-stock notifications (same behaviour as /api/checkout)
+      for (const item of items) {
+        const itemData = await tx
+          .select()
+          .from(itemsTable)
+          .where(eq(itemsTable.id, Number(item.itemId)))
+          .limit(1);
+        if (
+          itemData[0] &&
+          itemData[0].reorderThreshold &&
+          itemData[0].quantity <= itemData[0].reorderThreshold
+        ) {
+          const admins = await tx.select().from(usersTable).where(eq(usersTable.role, 'admin'));
+          for (const admin of admins) {
+            await tx.insert(notificationsTable).values({
+              userId: admin.id,
+              type: 'low_stock',
+              title: 'Low Stock Alert',
+              body: `${itemData[0].name} is running low (${itemData[0].quantity} remaining)`,
+              relatedItemId: Number(item.itemId),
+            });
+          }
+        }
+      }
+
+      return inserted[0];
+    });
+
+    eventId = newEvent.id;
   }
 
   await db

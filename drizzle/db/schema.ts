@@ -1,11 +1,13 @@
-import { integer, pgTable, serial, text, varchar, timestamp, date, boolean } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { integer, pgTable, serial, text, varchar, timestamp, date, boolean, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 
-// Branches Table (unchanged)
+// Branches Table (holds the NFC tag of the branch's station — absorbed the
+// old workstations table: one tag per branch)
 export const branchesTable = pgTable('branches', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   location: varchar('location', { length: 255 }).notNull(),
+  tagId: varchar('tag_id', { length: 100 }).unique(), // NFC tag scanned at check-in
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
@@ -42,7 +44,10 @@ export const itemsTable = pgTable('items', {
   clientOpId: varchar('client_op_id', { length: 100 }).unique(), // offline replay idempotency
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
-});
+}, (t) => [
+  // Backstop: no code path can ever drive stock below zero.
+  check('items_quantity_not_negative', sql`quantity >= 0`),
+]);
 
 // Categories Table (dynamic product categories — Office Shoes, Casual Shoes, etc.)
 export const categoriesTable = pgTable('categories', {
@@ -95,39 +100,25 @@ export const schedulesTable = pgTable('schedules', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Performance Table (unchanged)
+// Performance Table — single table for BOTH assignment rows and NFC check-in
+// rows (absorbed the old staff_checkins table).
+//   type = 'assignment': event attribution; status drives the assignment
+//          lifecycle (Assigned / In Progress / Completed); activityId set.
+//   type = 'checkin':    a real NFC scan; tagId + timestamp set,
+//          activityId null, status stays the 'assignment' default.
 export const performanceTable = pgTable('performance', {
   id: serial('id').primaryKey(),
   userId: integer('user_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-  activityId: integer('activity_id')
-    .notNull()
-    .references(() => eventsTable.id, { onDelete: 'cascade' }),
-  status: varchar('status', { length: 50 }).notNull().default('Assigned'), // Assigned, In Progress, Completed
+  type: varchar('type', { length: 20 }).notNull().default('assignment'), // assignment | checkin
+  activityId: integer('activity_id').references(() => eventsTable.id, { onDelete: 'cascade' }), // null for check-ins
+  status: varchar('status', { length: 50 }).notNull().default('Assigned'), // assignment lifecycle only
+  tagId: varchar('tag_id', { length: 100 }), // NFC tag scanned (check-in rows)
+  workstationId: integer('workstation_id'), // branch the tag belongs to (check-in rows)
+  timestamp: timestamp('timestamp'), // when the scan happened (check-in rows)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
-});
-
-// Workstations Table (NFC-tagged physical stations, e.g. a register)
-export const workstationsTable = pgTable('workstations', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  tagId: varchar('tag_id', { length: 100 }).unique(), // NFC tag attached to the station
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdateFn(() => new Date()),
-});
-
-// Staff check-ins Table (real NFC scan records — performance screen source of truth)
-export const staffCheckinsTable = pgTable('staff_checkins', {
-  id: serial('id').primaryKey(),
-  staffId: integer('staff_id')
-    .notNull()
-    .references(() => usersTable.id, { onDelete: 'cascade' }),
-  tagId: varchar('tag_id', { length: 100 }).notNull(), // tag that was scanned
-  workstationId: integer('workstation_id').references(() => workstationsTable.id),
-  timestamp: timestamp('timestamp').notNull().defaultNow(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // Payments Table (PayChangu intent — pending until the gateway verifies it)

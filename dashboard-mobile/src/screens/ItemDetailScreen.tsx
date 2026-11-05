@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag } from 'lucide-react-native';
+import { Package, Edit, Trash2, Barcode, DollarSign, Hash, Tag, RotateCcw } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { ScreenHeader } from '../components/ui';
@@ -30,6 +30,8 @@ interface Item {
   reorderThreshold: number | null;
   imageUrl: string | null;
   branchId: number | null;
+  branchCount?: number;
+  branchIds?: number[];
   createdAt: string;
   updatedAt: string;
 }
@@ -88,15 +90,6 @@ export default function ItemDetailScreen() {
     return `MWK ${price.toLocaleString()}`;
   };
 
-  const getStockStatus = () => {
-    if (!item) return { label: 'Unknown', color: Theme.gray500, bg: Theme.muted };
-    if (item.quantity === 0) return { label: 'Out of Stock', color: Theme.error, bg: Theme.errorLight };
-    if (item.reorderThreshold && item.quantity <= item.reorderThreshold) {
-      return { label: 'Low Stock', color: Theme.warning, bg: Theme.warningLight };
-    }
-    return { label: 'In Stock', color: Theme.success, bg: Theme.successLight };
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -112,8 +105,6 @@ export default function ItemDetailScreen() {
       </View>
     );
   }
-
-  const stockStatus = getStockStatus();
 
   return (
     <View style={styles.container}>
@@ -172,27 +163,21 @@ export default function ItemDetailScreen() {
                 <Text style={styles.detailValue}>{formatPrice(item.costPrice)}</Text>
               </View>
             )}
-          </View>
 
-          {/* Stock Info */}
-          <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Stock Information</Text>
-            <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg, alignSelf: 'center', marginBottom: 12 }]}>
-              <Text style={[styles.stockText, { color: stockStatus.color }]}>{stockStatus.label}</Text>
+            <View style={styles.detailRow}>
+              <Package size={18} color={Theme.gray500} />
+              <Text style={styles.detailLabel}>Quantity</Text>
+              <Text style={styles.detailValue}>{item.quantity}</Text>
             </View>
-            <View style={styles.stockInfo}>
-              <View style={styles.stockStat}>
-                <Text style={styles.stockStatValue}>{item.quantity}</Text>
-                <Text style={styles.stockStatLabel}>Current Stock</Text>
-              </View>
-              <View style={styles.stockStat}>
-                <Text style={styles.stockStatValue}>{item.reorderThreshold || 'N/A'}</Text>
-                <Text style={styles.stockStatLabel}>Reorder Point</Text>
-              </View>
+
+            <View style={styles.detailRow}>
+              <RotateCcw size={18} color={Theme.gray500} />
+              <Text style={styles.detailLabel}>Reorder Threshold</Text>
+              <Text style={styles.detailValue}>{item.reorderThreshold ?? 'N/A'}</Text>
             </View>
           </View>
 
-          {/* Actions — below the stock cards instead of in the header */}
+          {/* Actions — below the details card instead of in the header */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.editButton]}
@@ -268,13 +253,6 @@ const styles = StyleSheet.create({
   },
   itemName: { fontSize: 22, fontWeight: '700', color: Theme.foreground, marginBottom: 8 },
   itemPrice: { fontSize: 24, fontWeight: '700', color: Theme.primary, marginBottom: 12 },
-  stockBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Theme.radius,
-    alignSelf: 'flex-start',
-  },
-  stockText: { fontSize: 13, fontWeight: '600' },
   detailsCard: {
     margin: 16,
     padding: 16,
@@ -298,12 +276,4 @@ const styles = StyleSheet.create({
   },
   detailLabel: { flex: 1, marginLeft: 12, fontSize: 14, color: Theme.gray500 },
   detailValue: { fontSize: 14, fontWeight: '500', color: Theme.foreground },
-  stockInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 8,
-  },
-  stockStat: { alignItems: 'center' },
-  stockStatValue: { fontSize: 24, fontWeight: '700', color: Theme.primary },
-  stockStatLabel: { fontSize: 12, color: Theme.gray500, marginTop: 4 },
 });

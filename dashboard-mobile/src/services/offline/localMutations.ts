@@ -41,8 +41,83 @@ async function findRow(table: string, id: number): Promise<Row | null> {
   return db.getFirstAsync<Row>(`SELECT * FROM ${table} WHERE id = ?`, [id]);
 }
 
+// Offline twin of the server's StockError: thrown BEFORE any row is written,
+// so nothing is queued to the outbox and the UI shows a clear message.
+export class LocalStockError extends Error {
+  status: number;
+  constructor(message: string, status = 409) {
+    super(message);
+    this.name = 'LocalStockError';
+    this.status = status;
+  }
+}
+
+/**
+ * Validate stock lines against the local mirror before applying a mutation.
+ * `restore` lists quantities that the same operation is about to add back
+ * (e.g. the old lines of a sale being edited), which count as available.
+ */
+async function assertLocalStock(
+  lines: Row[],
+  opts: { branchId?: number | null; restore?: Row[] } = {}
+) {
+  const needed = new Map<number, number>();
+  for (const line of lines) {
+    const itemId = Number(line.itemId);
+    const qty = Number(line.quantity);
+    if (!Number.isInteger(itemId) || itemId <= 0) {
+      throw new LocalStockError('Invalid item in request', 400);
+    }
+    if (!Number.isInteger(qty) || qty <= 0) {
+      throw new LocalStockError('Quantities must be positive whole numbers', 400);
+    }
+    needed.set(itemId, (needed.get(itemId) ?? 0) + qty);
+  }
+
+  const restored = new Map<number, number>();
+  for (const line of opts.restore ?? []) {
+    const itemId = Number(line.itemId);
+    restored.set(itemId, (restored.get(itemId) ?? 0) + Number(line.quantity));
+  }
+
+  const db = await getOfflineDb();
+  for (const [itemId, qty] of needed) {
+    const row = await db.getFirstAsync<Row>('SELECT * FROM items WHERE id = ?', [itemId]);
+    if (!row) throw new LocalStockError('One of the items no longer exists', 400);
+    if (opts.branchId != null && Number(row.branchId) !== Number(opts.branchId)) {
+      throw new LocalStockError(`"${row.name}" is not stocked at the selected branch`, 400);
+    }
+    const available = Number(row.quantity ?? 0) + (restored.get(itemId) ?? 0);
+    if (available < qty) {
+      throw new LocalStockError(
+        available <= 0
+          ? `Insufficient stock: "${row.name}" is out of stock`
+          : `Insufficient stock: "${row.name}" has only ${available} available (requested ${qty})`
+      );
+    }
+  }
+}
+
 async function adjustStock(itemId: number, delta: number) {
   const db = await getOfflineDb();
+  if (delta < 0) {
+    // Guarded: the UPDATE only applies while the balance would stay >= 0,
+    // mirroring the server-side WHERE quantity >= n predicate.
+    const result = await db.runAsync(
+      'UPDATE items SET quantity = COALESCE(quantity, 0) + ? WHERE id = ? AND COALESCE(quantity, 0) + ? >= 0',
+      [delta, itemId, delta]
+    );
+    if (result.changes === 0) {
+      const row = await db.getFirstAsync<Row>('SELECT name, quantity FROM items WHERE id = ?', [itemId]);
+      if (!row) throw new LocalStockError('One of the items no longer exists', 400);
+      throw new LocalStockError(
+        Number(row.quantity ?? 0) <= 0
+          ? `Insufficient stock: "${row.name}" is out of stock`
+          : `Insufficient stock: "${row.name}" has only ${Number(row.quantity ?? 0)} available`
+      );
+    }
+    return;
+  }
   await db.runAsync('UPDATE items SET quantity = COALESCE(quantity, 0) + ? WHERE id = ?', [
     delta,
     itemId,
@@ -215,10 +290,11 @@ async function applyEventStock(eventType: string, items: Row[], branchId?: numbe
 
       // Mirror the destination row when it already exists locally. If it does
       // not, the server will create it during replay and the next pull mirrors it.
+      // Match on the normalized name so case/whitespace never forks a row.
       if (source?.name && toBranchId != null) {
         const db = await getOfflineDb();
         const destination = await db.getFirstAsync<Row>(
-          'SELECT * FROM items WHERE branchId = ? AND name = ? LIMIT 1',
+          'SELECT * FROM items WHERE branchId = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
           [toBranchId, source.name]
         );
         if (destination) {
@@ -231,6 +307,11 @@ async function applyEventStock(eventType: string, items: Row[], branchId?: numbe
 
 export async function createCheckoutLocal(payload: Row, clientOpId: string) {
   const items: Row[] = Array.isArray(payload.items) ? payload.items : [];
+
+  // Validate stock BEFORE writing anything — a rejected sale must not leave
+  // a half-written event or get queued to the outbox.
+  await assertLocalStock(items);
+
   const totalAmount = items.reduce(
     (sum, item) => sum + Number(item.quantity) * Number(item.unitPriceAtSale || 0),
     0
@@ -282,6 +363,15 @@ export async function createCheckoutLocal(payload: Row, clientOpId: string) {
 
 export async function createEventLocal(payload: Row, clientOpId: string) {
   const items: Row[] = Array.isArray(payload.items) ? payload.items : [];
+
+  // Validate before writing (sales need stock; transfers need the stock at
+  // the source branch). Receiving only adds stock, so nothing to check.
+  if (payload.eventType === 'sale') {
+    await assertLocalStock(items);
+  } else if (payload.eventType === 'transfer') {
+    await assertLocalStock(items, { branchId: payload.branchId ? Number(payload.branchId) : null });
+  }
+
   const eventId = await nextTempId('events');
   const computedAmount =
     Number(payload.amount) ||
@@ -345,18 +435,22 @@ export async function updateSaleLocal(eventId: number, payload: Row) {
   ]);
 
   if (existing.eventType === 'sale') {
+    // The old lines are about to be added back, so they count as available
+    // stock for the new lines. Validate the whole edit before touching rows —
+    // a rejected edit must not restore the old stock without deducting the new.
+    const items: Row[] = Array.isArray(payload.items) ? payload.items : [];
+    await assertLocalStock(items, { restore: oldItems });
+
     for (const item of oldItems) {
       await adjustStock(Number(item.itemId), Number(item.quantity));
     }
-  }
 
-  const items: Row[] = Array.isArray(payload.items) ? payload.items : [];
-  if (existing.eventType === 'sale') {
     for (const item of items) {
       await adjustStock(Number(item.itemId), -Number(item.quantity));
     }
   }
 
+  const items: Row[] = Array.isArray(payload.items) ? payload.items : [];
   const totalAmount =
     items.length > 0
       ? items.reduce(
@@ -396,13 +490,65 @@ export async function deleteSaleLocal(eventId: number) {
     eventId,
   ]);
 
-  if (existing.eventType === 'sale' || existing.eventType === 'transfer') {
+  // Validate every revert BEFORE mutating: receiving/transfer reversals take
+  // stock away, and a transfer revert must debit the destination row.
+  if (existing.eventType === 'receiving') {
+    await assertLocalStock(items);
+  } else if (existing.eventType === 'transfer' && existing.toBranchId != null) {
+    for (const item of items) {
+      const src = await findRow('items', Number(item.itemId));
+      if (!src?.name) continue;
+      const destination = await db.getFirstAsync<Row>(
+        'SELECT * FROM items WHERE branchId = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
+        [Number(existing.toBranchId), src.name]
+      );
+      if (destination) {
+        await assertLocalStock([{ itemId: Number(destination.id), quantity: Number(item.quantity) }]);
+      }
+    }
+  }
+
+  if (existing.eventType === 'sale') {
     for (const item of items) {
       await adjustStock(Number(item.itemId), Number(item.quantity));
     }
   } else if (existing.eventType === 'receiving') {
     for (const item of items) {
       await adjustStock(Number(item.itemId), -Number(item.quantity));
+    }
+  } else if (existing.eventType === 'transfer' && existing.toBranchId != null) {
+    // Credit the source row (event line items point at it) and debit the
+    // destination clone — otherwise the transferred stock stays double-counted.
+    for (const item of items) {
+      const itemId = Number(item.itemId);
+      const quantity = Number(item.quantity);
+      const src = await findRow('items', itemId);
+      if (!src) continue;
+
+      await adjustStock(itemId, quantity);
+
+      if (src.name) {
+        const destination = await db.getFirstAsync<Row>(
+          'SELECT * FROM items WHERE branchId = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
+          [Number(existing.toBranchId), src.name]
+        );
+        if (destination) {
+          await adjustStock(Number(destination.id), -quantity);
+
+          // Mirrors the server: an emptied destination clone is removed so the
+          // product doesn't linger as a phantom "0 stock at branch X" row.
+          // Rows with sales history are kept (event_items references them).
+          const destId = Number(destination.id);
+          const refs = await db.getFirstAsync<Row>(
+            'SELECT 1 AS one FROM event_items WHERE itemId = ? LIMIT 1',
+            [destId]
+          );
+          const after = await db.getFirstAsync<Row>('SELECT quantity FROM items WHERE id = ?', [destId]);
+          if (!refs && Number(after?.quantity ?? 0) <= 0) {
+            await db.runAsync('DELETE FROM items WHERE id = ?', [destId]);
+          }
+        }
+      }
     }
   }
 
@@ -413,45 +559,6 @@ export async function deleteSaleLocal(eventId: number) {
   await db.runAsync('DELETE FROM events WHERE id = ?', [eventId]);
 
   return { success: true as const, message: 'Checkout deleted and inventory restored', offline: true };
-}
-
-export async function createActivityLocal(payload: Row, clientOpId: string) {
-  const eventId = await nextTempId('events');
-  const activityDate = payload.activityDate || today();
-
-  const event: Row = {
-    id: eventId,
-    eventType: 'adjustment',
-    financialType: payload.activityType || 'Neutral',
-    description: payload.description,
-    amount: Number(payload.amount) || 0,
-    date: activityDate,
-    branchId: null,
-    toBranchId: null,
-    paymentMethod: null,
-    paymentReference: null,
-    paymentStatus: null,
-    isRecurring: 0,
-    recurrenceRule: null,
-    clientOpId,
-    createdAt: nowIso(),
-  };
-
-  await insertRow('events', event);
-
-  // Calendar rule must match the server: activities dated today or later get
-  // a schedule row (string compare, no timezone-shifting Date parsing).
-  if (activityDate >= today()) {
-    await insertRow('schedules', {
-      id: await nextTempId('schedules'),
-      activityId: eventId,
-      scheduledDate: activityDate,
-      notificationMessage: `Upcoming activity: ${payload.description} on ${activityDate}`,
-      createdAt: nowIso(),
-    });
-  }
-
-  return { success: true as const, activity: [event], offline: true };
 }
 
 export async function createPerformanceLocal(payload: Row) {

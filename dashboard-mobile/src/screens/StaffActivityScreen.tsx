@@ -68,15 +68,15 @@ export default function StaffActivityScreen() {
         // userId scopes the response server-side: admins receive the full list,
         // staff/cashier only their own row (enough to resolve their own record)
         const usersQs = user?.id ? `?userId=${user.id}` : '';
-        const [activitiesRes, itemsRes, usersRes] = await Promise.all([
-          api.get<{ success: boolean; activities: any[] }>('/api/activities').catch(() => ({ success: false, activities: [] } as any)),
+        const [eventsRes, itemsRes, usersRes] = await Promise.all([
+          api.get<{ success: boolean; events: any[] }>('/api/events').catch(() => ({ success: false, events: [] } as any)),
           api.get<{ success: boolean; items: any[] }>('/api/items').catch(() => ({ success: false, items: [] } as any)),
           api.get<{ success: boolean; users: any[] }>(`/api/users${usersQs}`).catch(() => ({ success: false, users: [] } as any)),
         ]);
         if (!mounted) return;
 
         const map = new Map<string, ActivityOption>();
-        for (const act of activitiesRes.activities || []) {
+        for (const act of eventsRes.events || []) {
           const label = String(act.description ?? '').trim();
           if (!label) continue;
           if (!map.has(label.toLowerCase())) {
@@ -161,13 +161,15 @@ export default function StaffActivityScreen() {
   const ensureActivityId = async (option: ActivityOption): Promise<number | null> => {
     if (option.activityId) return option.activityId;
     const today = new Date().toISOString().slice(0, 10);
-    const created = await api.post<{ success: boolean; activity?: any[] }>('/api/activities', {
+    // Activities are events (eventType='adjustment') — /api/activities was removed.
+    const created = await api.post<{ success: boolean; event?: any }>('/api/events', {
+      eventType: 'adjustment',
+      financialType: 'Neutral',
       description: option.label,
-      activityType: 'Neutral',
       amount: 0,
-      activityDate: today,
+      date: today,
     });
-    const createdActivity = created.activity?.[0];
+    const createdActivity = created.event;
     if (!created?.success || !createdActivity?.id) return null;
     return createdActivity.id;
   };

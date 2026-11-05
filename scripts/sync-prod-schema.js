@@ -14,6 +14,7 @@ const EXPECTED_TABLES = [
   'schedules',
   'performance',
   'notifications',
+  'payments',
 ];
 
 const ADDITIVE_DDL = [
@@ -40,6 +41,50 @@ const ADDITIVE_DDL = [
      related_item_id integer REFERENCES items(id),
      created_at timestamp NOT NULL DEFAULT now()
    )`,
+  // stock can never go negative (guarded app code + this DB backstop)
+  `DO $$ BEGIN
+     IF NOT EXISTS (
+       SELECT 1 FROM pg_constraint WHERE conname = 'items_quantity_not_negative'
+     ) THEN
+       ALTER TABLE items ADD CONSTRAINT items_quantity_not_negative CHECK (quantity >= 0);
+     END IF;
+   END $$`,
+  // payments table (PayChangu intents) if absent
+  `CREATE TABLE IF NOT EXISTS payments (
+     id serial PRIMARY KEY,
+     charge_id varchar(100) NOT NULL UNIQUE,
+     gateway_reference varchar(255),
+     amount integer NOT NULL DEFAULT 0,
+     currency varchar(10) NOT NULL DEFAULT 'MWK',
+     payment_method varchar(50) NOT NULL,
+     mobile varchar(30),
+     status varchar(30) NOT NULL DEFAULT 'pending',
+     items text,
+     description varchar(255),
+     user_id integer REFERENCES users(id),
+     event_id integer REFERENCES events(id),
+     client_op_id varchar(100) UNIQUE,
+     created_at timestamp NOT NULL DEFAULT now(),
+     updated_at timestamp NOT NULL DEFAULT now()
+   )`,
+  // workstations folded into branches: one NFC tag per branch
+  // (stored as a UNIQUE constraint — the form Drizzle's push/pull round-trips;
+  // a plain unique index would be re-flagged as missing on every push)
+  `ALTER TABLE branches ADD COLUMN IF NOT EXISTS tag_id varchar(100)`,
+  `DO $$ BEGIN
+     IF NOT EXISTS (
+       SELECT 1 FROM pg_constraint WHERE conname = 'branches_tag_id_unique'
+     ) THEN
+       DROP INDEX IF EXISTS branches_tag_id_unique;
+       ALTER TABLE branches ADD CONSTRAINT branches_tag_id_unique UNIQUE (tag_id);
+     END IF;
+   END $$`,
+  // staff_checkins folded into performance: type label + check-in columns
+  `ALTER TABLE performance ADD COLUMN IF NOT EXISTS type varchar(20) NOT NULL DEFAULT 'assignment'`,
+  `ALTER TABLE performance ADD COLUMN IF NOT EXISTS tag_id varchar(100)`,
+  `ALTER TABLE performance ADD COLUMN IF NOT EXISTS workstation_id integer`,
+  `ALTER TABLE performance ADD COLUMN IF NOT EXISTS "timestamp" timestamp`,
+  `ALTER TABLE performance ALTER COLUMN activity_id DROP NOT NULL`,
 ];
 
 async function main() {

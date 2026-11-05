@@ -46,25 +46,27 @@ export default function ScannerScreen() {
     setLoading(true);
 
     try {
-      const result = await api.get<{ success: boolean; item: Item | null }>(
+      const result = await api.get<{ success: boolean; items?: Item[]; item?: Item | null }>(
         `/api/items?search=${data}`
       );
+      // The items endpoint returns an aggregated list — take the first match.
+      const found = result.items?.[0] ?? result.item ?? null;
 
-      if (result.success && result.item) {
+      if (result.success && found) {
         // Item found
         if (mode === 'lookup') {
           navigation.goBack();
-          (navigation as any).navigate('ItemDetail', { itemId: result.item.id });
+          (navigation as any).navigate('ItemDetail', { itemId: found.id });
         } else if (mode === 'checkout') {
-          if (result.item.quantity > 0) {
+          if (found.quantity > 0) {
             addItem({
-              itemId: result.item.id,
-              name: result.item.name,
-              price: result.item.price,
-              barcode: result.item.barcode,
-              imageUrl: result.item.imageUrl,
+              itemId: found.id,
+              name: found.name,
+              price: found.price,
+              barcode: found.barcode,
+              imageUrl: found.imageUrl,
             });
-            Alert.alert('Added to Cart', `${result.item.name} added to cart.`);
+            Alert.alert('Added to Cart', `${found.name} added to cart.`);
             navigation.goBack();
           } else {
             Alert.alert('Out of Stock', 'This item is currently out of stock.');

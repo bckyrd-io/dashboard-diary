@@ -8,6 +8,7 @@ import {
   eventsTable,
   itemsTable,
   notificationsTable,
+  paymentsTable,
   performanceTable,
   schedulesTable,
   usersTable,
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
       schedules,
       performance,
       notifications,
+      payments,
     ] = await Promise.all([
       db.select().from(branchesTable),
       db.select().from(usersTable),
@@ -57,6 +59,7 @@ export async function GET(req: Request) {
       db.select().from(schedulesTable),
       db.select().from(performanceTable),
       db.select().from(notificationsTable),
+      db.select().from(paymentsTable),
     ]);
 
     return NextResponse.json({
@@ -74,6 +77,7 @@ export async function GET(req: Request) {
         schedules,
         performance,
         notifications,
+        payments,
       },
     });
   } catch (error) {

@@ -32,6 +32,7 @@ async function seed() {
   console.log('🧹 Cleaning existing data...');
   // Truncate tables in cascade order
   await db.delete(schema.notificationsTable);
+  await db.delete(schema.paymentsTable);
   await db.delete(schema.performanceTable);
   await db.delete(schema.schedulesTable);
   await db.delete(schema.eventItemsTable);
@@ -56,8 +57,10 @@ async function seed() {
   const insertedBranches = await db
     .insert(schema.branchesTable)
     .values([
-      { name: 'The Sneaker Lounge - Main Store', location: 'City Centre' },
-      { name: 'The Sneaker Lounge - Mall Branch', location: 'Game City Mall' },
+      // tagId = the NFC tag scanned for staff check-ins (workstations folded
+      // into branches)
+      { name: 'The Sneaker Lounge - Main Store', location: 'City Centre', tagId: 'STATION-001' },
+      { name: 'The Sneaker Lounge - Mall Branch', location: 'Game City Mall', tagId: 'STATION-002' },
       { name: 'The Sneaker Lounge - Warehouse', location: 'Industrial Area' },
     ])
     .returning();

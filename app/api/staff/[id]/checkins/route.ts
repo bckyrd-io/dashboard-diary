@@ -1,23 +1,23 @@
 import { db } from '../../../../../drizzle/db';
-import { staffCheckinsTable } from '../../../../../drizzle/db/schema';
+import { performanceTable } from '../../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const rows = await db
       .select()
-      .from(staffCheckinsTable)
-      .where(eq(staffCheckinsTable.staffId, Number(id)))
-      .orderBy(desc(staffCheckinsTable.timestamp));
+      .from(performanceTable)
+      .where(and(eq(performanceTable.type, 'checkin'), eq(performanceTable.userId, Number(id))))
+      .orderBy(desc(performanceTable.timestamp));
 
     const checkIns = rows.map((r) => ({
       id: r.id,
-      staffId: r.staffId,
+      staffId: r.userId,
       tagId: r.tagId,
       workstationId: r.workstationId ?? undefined,
-      timestamp: new Date(r.timestamp).toISOString(),
+      timestamp: new Date(r.timestamp ?? r.createdAt).toISOString(),
     }));
 
     return NextResponse.json({ success: true, checkIns });

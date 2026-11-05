@@ -1,8 +1,9 @@
 import { db } from '../../../../drizzle/db';
-import { workstationsTable } from '../../../../drizzle/db/schema';
+import { branchesTable } from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
+// Tag lookup against branches (workstations were folded into branches).
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,9 +14,15 @@ export async function GET(req: Request) {
     }
 
     const rows = await db
-      .select()
-      .from(workstationsTable)
-      .where(eq(workstationsTable.tagId, tag))
+      .select({
+        id: branchesTable.id,
+        name: branchesTable.name,
+        tagId: branchesTable.tagId,
+        createdAt: branchesTable.createdAt,
+        updatedAt: branchesTable.updatedAt,
+      })
+      .from(branchesTable)
+      .where(eq(branchesTable.tagId, tag))
       .limit(1);
 
     if (rows.length === 0) {

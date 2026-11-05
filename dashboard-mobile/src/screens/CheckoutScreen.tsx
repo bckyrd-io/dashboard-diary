@@ -51,6 +51,11 @@ export default function CheckoutScreen() {
   const [pastSales, setPastSales] = useState<SaleEvent[]>([]);
   const [pastSalesLoading, setPastSalesLoading] = useState(true);
   const [editingSaleId, setEditingSaleId] = useState<number | null>(null);
+  // itemId -> units currently in stock, used to cap the quantity stepper
+  const [stockMap, setStockMap] = useState<Record<number, number>>({});
+  // Quantities the past sale had when editing started: the server restores
+  // those first, so they're available again on top of current stock.
+  const [editBaseline, setEditBaseline] = useState<Record<number, number>>({});
 
   const paymentMethods: { id: PaymentMethod; label: string; icon: typeof CreditCard }[] = [
     { id: 'cash', label: 'Cash', icon: Banknote },
@@ -83,9 +88,47 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Current stock per item so the + button can never exceed what's available.
+  const fetchStocks = async () => {
+    try {
+      const result = await api.get<{ success: boolean; items: { id: number; quantity: number }[] }>(
+        '/api/items'
+      );
+      if (result.success) {
+        const map: Record<number, number> = {};
+        for (const row of result.items) map[row.id] = Number(row.quantity) || 0;
+        setStockMap(map);
+      }
+    } catch (error) {
+      console.error('Error fetching stock:', error);
+    }
+  };
+
+  // Max sellable quantity for a cart line right now.
+  const maxFor = (itemId: number): number => {
+    const stock = stockMap[itemId];
+    if (stock === undefined) return Infinity; // no data yet — server still guards the sale
+    return stock + (editingSaleId ? editBaseline[itemId] ?? 0 : 0);
+  };
+
+  const clampToStock = (itemId: number, quantity: number): number => {
+    const max = maxFor(itemId);
+    return Number.isFinite(max) ? Math.min(quantity, max) : quantity;
+  };
+
+  const handleIncrease = (item: CartItem) => {
+    const max = maxFor(item.itemId);
+    if (item.quantity + 1 > max) {
+      Alert.alert('Out of Stock', `Only ${max} of "${item.name}" available.`);
+      return;
+    }
+    updateQuantity(item.itemId, item.quantity + 1);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchPastSales();
+      fetchStocks();
     }, [])
   );
 
@@ -104,6 +147,11 @@ export default function CheckoutScreen() {
           imageUrl: it.itemImage || null,
         }));
         setCart(populatedItems);
+        // Remember the sale's own quantities — editing restores them to stock
+        // before applying changes, so they count toward the cap.
+        const baseline: Record<number, number> = {};
+        for (const it of populatedItems) baseline[it.itemId] = it.quantity;
+        setEditBaseline(baseline);
         if (ev.paymentMethod && ['cash', 'airtel_money', 'tnm_mpamba'].includes(ev.paymentMethod)) {
           setSelectedPayment(ev.paymentMethod as PaymentMethod);
         }
@@ -185,7 +233,8 @@ export default function CheckoutScreen() {
       }
     } catch (error) {
       console.error('Update checkout error:', error);
-      Alert.alert('Error', 'An error occurred while updating checkout.');
+      const message = error instanceof Error ? error.message : 'An error occurred while updating checkout.';
+      Alert.alert('Update Failed', message);
     } finally {
       setLoading(false);
     }
@@ -217,7 +266,8 @@ export default function CheckoutScreen() {
               }
             } catch (error) {
               console.error('Delete error:', error);
-              Alert.alert('Error', 'Failed to delete checkout.');
+              const message = error instanceof Error ? error.message : 'Failed to delete checkout.';
+              Alert.alert('Delete Failed', message);
             } finally {
               setLoading(false);
             }
@@ -263,13 +313,13 @@ export default function CheckoutScreen() {
         <TextInput
           style={styles.quantityInput}
           value={item.quantity.toString()}
-          onChangeText={(text) => updateQuantity(item.itemId, parseInt(text) || 0)}
+          onChangeText={(text) => updateQuantity(item.itemId, clampToStock(item.itemId, parseInt(text) || 0))}
           keyboardType="numeric"
           selectTextOnFocus
         />
         <TouchableOpacity
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.itemId, item.quantity + 1)}
+          onPress={() => handleIncrease(item)}
         >
           <Plus size={16} color={Theme.primary} />
         </TouchableOpacity>

@@ -21,7 +21,10 @@ export async function GET(req: Request) {
                     updatedAt: performanceTable.updatedAt,
                 })
                 .from(usersTable)
-                .leftJoin(performanceTable, eq(usersTable.id, performanceTable.userId))
+                .leftJoin(performanceTable, and(
+                    eq(usersTable.id, performanceTable.userId),
+                    eq(performanceTable.type, "assignment")
+                ))
                 .leftJoin(branchesTable, eq(usersTable.branchId, branchesTable.id))
                 .leftJoin(eventsTable, eq(performanceTable.activityId, eventsTable.id))
                 .where(
@@ -47,7 +50,10 @@ export async function GET(req: Request) {
                     updatedAt: performanceTable.updatedAt,
                 })
                 .from(usersTable)
-                .leftJoin(performanceTable, eq(usersTable.id, performanceTable.userId))
+                .leftJoin(performanceTable, and(
+                    eq(usersTable.id, performanceTable.userId),
+                    eq(performanceTable.type, "assignment")
+                ))
                 .leftJoin(branchesTable, eq(usersTable.branchId, branchesTable.id))
                 .leftJoin(eventsTable, eq(performanceTable.activityId, eventsTable.id))
                 .where(eq(usersTable.role, "Staff"));
@@ -74,6 +80,7 @@ export async function POST(req: Request) {
             .from(performanceTable)
             .where(
                 and(
+                    eq(performanceTable.type, "assignment"),
                     eq(performanceTable.userId, Number(body.userId)),
                     eq(performanceTable.activityId, Number(body.activityId))
                 )
@@ -89,6 +96,7 @@ export async function POST(req: Request) {
 
         const newPerformance = await db.insert(performanceTable).values({
             userId: Number(body.userId),
+            type: "assignment",
             activityId: Number(body.activityId),
             status: body.status || "Assigned",
             updatedAt: new Date(),

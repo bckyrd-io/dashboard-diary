@@ -8,6 +8,7 @@ import {
   eventsTable,
   itemsTable,
   notificationsTable,
+  paymentsTable,
   performanceTable,
   schedulesTable,
   usersTable,
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
       id: num(row.id) ?? undefined,
       name: String(row.name),
       location: String(row.location),
+      tagId: text(row.tagId), // NFC tag (workstations folded into branches)
       createdAt: toDate(row.createdAt) ?? undefined,
       updatedAt: toDate(row.updatedAt) ?? undefined,
     }));
@@ -178,8 +180,12 @@ export async function POST(req: Request) {
     const performance = (t.performance as any[]).map((row) => ({
       id: num(row.id) ?? undefined,
       userId: num(row.userId) ?? undefined,
-      activityId: num(row.activityId) ?? undefined,
+      type: row.type ? String(row.type) : 'assignment', // assignment | checkin
+      activityId: num(row.activityId), // null for check-in rows
       status: row.status ? String(row.status) : 'Assigned',
+      tagId: text(row.tagId),
+      workstationId: num(row.workstationId),
+      timestamp: toDate(row.timestamp),
       createdAt: toDate(row.createdAt) ?? undefined,
       updatedAt: toDate(row.updatedAt) ?? undefined,
     }));
@@ -196,6 +202,28 @@ export async function POST(req: Request) {
       createdAt: toDate(row.createdAt) ?? undefined,
     }));
 
+    // Payments are optional so older backups (pre-PayChangu) still restore;
+    // when absent the server's payment rows are simply cleared.
+    const payments = Array.isArray(t.payments)
+      ? (t.payments as any[]).map((row) => ({
+          id: num(row.id) ?? undefined,
+          chargeId: String(row.chargeId),
+          gatewayReference: text(row.gatewayReference),
+          amount: num(row.amount) ?? 0,
+          currency: row.currency ? String(row.currency) : 'MWK',
+          paymentMethod: String(row.paymentMethod),
+          mobile: text(row.mobile),
+          status: row.status ? String(row.status) : 'pending',
+          items: text(row.items),
+          description: text(row.description),
+          userId: num(row.userId),
+          eventId: num(row.eventId),
+          clientOpId: text(row.clientOpId),
+          createdAt: toDate(row.createdAt) ?? undefined,
+          updatedAt: toDate(row.updatedAt) ?? undefined,
+        }))
+      : [];
+
     const tables = [
       ['branches', branchesTable, branches],
       ['users', usersTable, users],
@@ -206,13 +234,14 @@ export async function POST(req: Request) {
       ['schedules', schedulesTable, schedules],
       ['performance', performanceTable, performance],
       ['notifications', notificationsTable, notifications],
+      ['payments', paymentsTable, payments],
     ] as const;
 
     const counts: Record<string, number> = {};
 
     await db.transaction(async (tx) => {
       await tx.execute(
-        sql`TRUNCATE TABLE "event_items", "schedules", "performance", "notifications", "events", "items", "categories", "users", "branches" RESTART IDENTITY CASCADE`
+        sql`TRUNCATE TABLE "event_items", "schedules", "performance", "notifications", "payments", "events", "items", "categories", "users", "branches" RESTART IDENTITY CASCADE`
       );
 
       for (const [name, table, rows] of tables) {

@@ -1,10 +1,10 @@
 import { db } from '../../../drizzle/db';
-import { usersTable, staffCheckinsTable } from '../../../drizzle/db/schema';
+import { usersTable, performanceTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
 import { desc, eq } from 'drizzle-orm';
 
-// Employees are real user accounts. workstationId reflects the station of the
-// user's most recent check-in (stations are auto-registered from NFC scans).
+// Employees are real user accounts. workstationId reflects the branch of the
+// user's most recent check-in (performance rows with type='checkin').
 export async function GET() {
   try {
     const users = await db
@@ -19,19 +19,20 @@ export async function GET() {
 
     const latestCheckIns = await db
       .select({
-        staffId: staffCheckinsTable.staffId,
-        workstationId: staffCheckinsTable.workstationId,
-        timestamp: staffCheckinsTable.timestamp,
+        staffId: performanceTable.userId,
+        workstationId: performanceTable.workstationId,
+        timestamp: performanceTable.timestamp,
       })
-      .from(staffCheckinsTable)
-      .orderBy(desc(staffCheckinsTable.timestamp));
+      .from(performanceTable)
+      .where(eq(performanceTable.type, 'checkin'))
+      .orderBy(desc(performanceTable.timestamp));
 
     const latestByStaff = new Map<number, { workstationId: number | null; timestamp: Date }>();
     for (const row of latestCheckIns) {
       if (!latestByStaff.has(row.staffId)) {
         latestByStaff.set(row.staffId, {
           workstationId: row.workstationId,
-          timestamp: row.timestamp,
+          timestamp: row.timestamp ?? new Date(0),
         });
       }
     }

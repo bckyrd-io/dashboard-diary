@@ -9,10 +9,11 @@ import {
   RefreshControl,
   TextInput,
   Image,
+  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Search, Plus, Tag, Package, ScanBarcode, Info, ShoppingCart } from 'lucide-react-native';
+import { Search, Plus, Tag, Package, ScanBarcode, ShoppingCart, Check } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Theme } from '../constants/Theme';
 import { useCart } from '../context/CartContext';
@@ -26,16 +27,17 @@ interface Item {
   sku: string | null;
   price: number;
   costPrice: number | null;
-  quantity: number;
+  quantity: number; // total stock across all branch copies of this product
   unit: string | null;
   reorderThreshold: number | null;
   imageUrl: string | null;
   branchId: number | null;
+  branchCount?: number; // how many branches stock this product
 }
 
 export default function ItemsScreen() {
   const navigation = useNavigation();
-  const { addItem } = useCart();
+  const { addItem, items: cartItems } = useCart();
   const { width: windowWidth } = useWindowDimensions();
 
   const [items, setItems] = useState<Item[]>([]);
@@ -146,8 +148,23 @@ export default function ItemsScreen() {
     return `MWK ${price.toLocaleString()}`;
   };
 
-  // Clicking an item adds it to cart and immediately navigates to Checkout (POS flow)
-  const handleItemPress = (item: Item) => {
+  // How many of this product are already sitting in the cart
+  const inCartQty = (itemId: number) =>
+    cartItems.find((c) => c.itemId === itemId)?.quantity ?? 0;
+
+  // The bottom section of the card adds to cart (no navigation) — checkout
+  // happens from the drawer menu when the customer's cart is ready.
+  const handleAddToCart = (item: Item) => {
+    const already = inCartQty(item.id);
+    if (item.quantity <= 0 || already + 1 > item.quantity) {
+      Alert.alert(
+        'Out of Stock',
+        item.quantity <= 0
+          ? `"${item.name}" is out of stock.`
+          : `Only ${item.quantity} of "${item.name}" available.`
+      );
+      return;
+    }
     addItem(
       {
         itemId: item.id,
@@ -158,19 +175,24 @@ export default function ItemsScreen() {
       },
       1
     );
-    navigation.navigate('Checkout' as never);
+  };
+
+  const openDetail = (item: Item) => {
+    (navigation as any).navigate('ItemDetail', { itemId: item.id });
   };
 
   const renderItem = ({ item }: { item: Item }) => {
     const stockStatus = getStockStatus(item);
+    const added = inCartQty(item.id);
 
     return (
-      <TouchableOpacity
-        style={[styles.itemCard, { width: cardWidth }]}
-        onPress={() => handleItemPress(item)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.imageWrapper}>
+      <View style={[styles.itemCard, { width: cardWidth }]}>
+        {/* Photo → item details */}
+        <TouchableOpacity
+          style={styles.imageWrapper}
+          onPress={() => openDetail(item)}
+          activeOpacity={0.8}
+        >
           {item.imageUrl ? (
             <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
           ) : (
@@ -178,23 +200,33 @@ export default function ItemsScreen() {
               <Package size={32} color={Theme.gray400} />
             </View>
           )}
-          {/* Quick detail link button */}
-          <TouchableOpacity
-            style={styles.detailButton}
-            onPress={() => (navigation as any).navigate('ItemDetail', { itemId: item.id })}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Info size={14} color="#374151" />
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.itemInfo}>
+        {/* Name/category → item details */}
+        <TouchableOpacity
+          style={styles.itemInfo}
+          onPress={() => openDetail(item)}
+          activeOpacity={0.7}
+        >
           <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.itemCategory}>{item.subCategory || item.category}</Text>
+        </TouchableOpacity>
+
+        {/* Price row → bottom of card: one big add-to-cart zone */}
+        <TouchableOpacity
+          style={styles.addZone}
+          onPress={() => handleAddToCart(item)}
+          activeOpacity={0.8}
+        >
           <View style={styles.priceRow}>
             <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
-            <View style={styles.quickAddBadge}>
-              <ShoppingCart size={12} color={Theme.primary} />
+            <View style={[styles.quickAddBadge, added > 0 && styles.quickAddBadgeActive]}>
+              {added > 0 ? (
+                <Check size={12} color="#fff" />
+              ) : (
+                <ShoppingCart size={12} color={Theme.primary} />
+              )}
+              {added > 0 && <Text style={styles.quickAddCount}>{added}</Text>}
             </View>
           </View>
           <View style={[styles.stockBadge, { backgroundColor: stockStatus.bg }]}>
@@ -202,8 +234,8 @@ export default function ItemsScreen() {
               {stockStatus.label} ({item.quantity})
             </Text>
           </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -418,21 +450,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  detailButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Theme.border,
-  },
   itemInfo: {
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+  },
+  addZone: {
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   itemName: {
     fontSize: 14,
@@ -457,12 +482,23 @@ const styles = StyleSheet.create({
     color: Theme.primary,
   },
   quickAddBadge: {
-    width: 22,
+    minWidth: 22,
     height: 22,
+    paddingHorizontal: 4,
     borderRadius: 11,
     backgroundColor: Theme.primaryLight,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 2,
+  },
+  quickAddBadgeActive: {
+    backgroundColor: Theme.success,
+  },
+  quickAddCount: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
   },
   stockBadge: {
     paddingHorizontal: 6,

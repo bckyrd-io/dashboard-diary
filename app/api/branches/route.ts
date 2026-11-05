@@ -34,7 +34,9 @@ export async function GET() {
                 id: branchesTable.id,
                 name: branchesTable.name,
                 location: branchesTable.location,
-                itemCount: sql<number>`count(${itemsTable.id})::int`.as('itemCount')
+                // Distinct PRODUCTS per branch — a transfer clones the row, so a
+                // plain count would inflate this number.
+                itemCount: sql<number>`count(DISTINCT lower(btrim(${itemsTable.name})) || '|' || coalesce(${itemsTable.category}::text, '') || '|' || coalesce(${itemsTable.subCategory}::text, ''))::int`.as('itemCount')
             })
             .from(branchesTable)
             .leftJoin(itemsTable, eq(itemsTable.branchId, branchesTable.id))

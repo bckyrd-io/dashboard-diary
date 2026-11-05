@@ -28,7 +28,6 @@ function queueable(method: string, path: string): boolean {
       '/api/branches',
       '/api/checkout',
       '/api/events',
-      '/api/activities',
       '/api/performance',
       '/api/staff/checkin',
     ].includes(clean);
@@ -83,11 +82,6 @@ async function applyLocalMutation(
   if (method === 'POST' && clean === '/api/events') {
     const result = await local.createEventLocal(body, String(body.clientOpId));
     return { result, queue: { entity: 'events', localId: Number(result.event.id) } };
-  }
-
-  if (method === 'POST' && clean === '/api/activities') {
-    const result = await local.createActivityLocal(body, String(body.clientOpId));
-    return { result, queue: { entity: 'events', localId: Number(result.activity[0].id) } };
   }
 
   if (method === 'POST' && clean === '/api/performance') {

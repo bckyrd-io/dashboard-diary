@@ -1,10 +1,12 @@
 import { db } from '../../../../drizzle/db';
-import { staffCheckinsTable, workstationsTable, usersTable } from '../../../../drizzle/db/schema';
+import { performanceTable, branchesTable, usersTable } from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
-// Record an NFC check-in. If the scanned tag isn't registered as a workstation
-// yet, it is created on the fly so stations appear from real scans.
+// Record an NFC check-in. Check-ins live in the performance table as
+// type='checkin' rows (the old staff_checkins table was merged into it).
+// The tag must be assigned to a branch (branches.tag_id) — unknown tags are
+// rejected with a clear message instead of silently auto-creating stations.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -24,33 +26,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Staff member not found' }, { status: 404 });
     }
 
-    // Resolve workstation by tag; auto-register unknown tags as stations.
-    let workstation =
-      (await db.select().from(workstationsTable).where(eq(workstationsTable.tagId, tagId)).limit(1))[0] ?? null;
-    if (!workstation) {
-      const created = await db
-        .insert(workstationsTable)
-        .values({ name: `Station ${tagId}`, tagId })
-        .returning();
-      workstation = created[0];
+    // Resolve the branch that owns this tag.
+    const branch = (
+      await db.select().from(branchesTable).where(eq(branchesTable.tagId, tagId)).limit(1)
+    )[0];
+    if (!branch) {
+      return NextResponse.json(
+        { success: false, message: `NFC tag "${tagId}" is not assigned to a branch` },
+        { status: 400 }
+      );
     }
 
     const inserted = await db
-      .insert(staffCheckinsTable)
+      .insert(performanceTable)
       .values({
-        staffId,
+        userId: staffId,
+        type: 'checkin',
         tagId,
-        workstationId: workstation.id,
+        workstationId: branch.id,
         timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
       })
       .returning();
 
     const checkIn = {
       id: inserted[0].id,
-      staffId: inserted[0].staffId,
+      staffId,
       tagId: inserted[0].tagId,
       workstationId: inserted[0].workstationId ?? undefined,
-      timestamp: new Date(inserted[0].timestamp).toISOString(),
+      timestamp: new Date(inserted[0].timestamp ?? inserted[0].createdAt).toISOString(),
     };
 
     return NextResponse.json({ success: true, checkIn });

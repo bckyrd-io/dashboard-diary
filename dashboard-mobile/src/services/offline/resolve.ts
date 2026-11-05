@@ -1,6 +1,5 @@
 import {
   cacheGet,
-  getActivities,
   getBranches,
   getCategories,
   getEventDetail,
@@ -76,10 +75,6 @@ export async function resolveOfflineGet(path: string): Promise<ResolveResult> {
     if (pathname === '/api/users') {
       const userId = query.userId ? Number(query.userId) : null;
       return { found: true, data: await getUsers(userId) };
-    }
-
-    if (pathname === '/api/activities') {
-      return { found: true, data: await getActivities() };
     }
 
     if (pathname === '/api/events') {

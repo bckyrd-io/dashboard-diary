@@ -28,6 +28,7 @@ const ALL_TABLES = [
   'schedules',
   'performance',
   'notifications',
+  'payments',
   'events',
   'items',
   'categories',

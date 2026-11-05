@@ -38,11 +38,14 @@ export async function GET(req: Request) {
       }
 
       if (!isAdmin) {
-        // Only events that have a performance row for this user ("data about them")
+        // Only events that have an assignment performance row for this user
+        // ("data about them") — check-in rows carry no event.
         eventsCondition = sql`${eventsTable.id} IN (
           SELECT ${performanceTable.activityId}
           FROM ${performanceTable}
           WHERE ${performanceTable.userId} = ${Number(userId)}
+            AND ${performanceTable.type} = 'assignment'
+            AND ${performanceTable.activityId} IS NOT NULL
         )`;
       }
     }
@@ -89,7 +92,7 @@ export async function GET(req: Request) {
       .from(eventsTable)
       .leftJoin(eventItemsTable, sql`${eventItemsTable.eventId} = ${eventsTable.id}`)
       .leftJoin(itemsTable, sql`${itemsTable.id} = ${eventItemsTable.itemId}`)
-      .leftJoin(performanceTable, sql`${performanceTable.activityId} = ${eventsTable.id}`)
+      .leftJoin(performanceTable, sql`${performanceTable.activityId} = ${eventsTable.id} AND ${performanceTable.type} = 'assignment'`)
       .leftJoin(usersTable, sql`${usersTable.id} = ${performanceTable.userId}`)
       .leftJoin(branchesTable, sql`${branchesTable.id} = ${usersTable.branchId}`)
       .leftJoin(schedulesTable, sql`${schedulesTable.activityId} = ${eventsTable.id}`)

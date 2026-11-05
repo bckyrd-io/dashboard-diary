@@ -1,7 +1,14 @@
 import { db } from '../../../drizzle/db';
 import { itemsTable, branchesTable } from '../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { eq, ilike, and, SQL, sql } from 'drizzle-orm';
+import { eq, and, SQL, sql } from 'drizzle-orm';
+
+// Stock is never negative — reject bad quantities before they reach the DB.
+function validQuantity(value: unknown): boolean {
+  if (value === undefined || value === null || value === '') return true;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0;
+}
 
 // Items created without an explicit branch (mobile Add Item, offline replays)
 // belong to the default branch — the first one that was registered.
@@ -32,13 +39,49 @@ export async function GET(req: Request) {
     if (branchId) {
       conditions.push(eq(itemsTable.branchId, Number(branchId)));
     }
-    if (search) {
-      conditions.push(ilike(itemsTable.name, `%${search}%`));
-    }
 
-    const items = conditions.length > 0
-      ? await db.select().from(itemsTable).where(and(...conditions))
-      : await db.select().from(itemsTable);
+    // A product lives on one row per branch (transfers clone the row), so the
+    // listing groups them back into ONE card: stock summed across branches,
+    // representative id/image/price from the group. Product key = normalized
+    // name + category + subCategory — the fields every clone copies.
+    const productKey = sql`lower(btrim(${itemsTable.name})), ${itemsTable.category}, ${itemsTable.subCategory}`;
+
+    const query = db
+      .select({
+        id: sql<number>`min(${itemsTable.id})`,
+        name: sql<string>`min(${itemsTable.name})`,
+        category: sql<string>`min(${itemsTable.category})`,
+        subCategory: sql<string | null>`min(${itemsTable.subCategory})`,
+        barcode: sql<string | null>`min(${itemsTable.barcode})`,
+        sku: sql<string | null>`min(${itemsTable.sku})`,
+        price: sql<number>`min(${itemsTable.price})`,
+        costPrice: sql<number | null>`min(${itemsTable.costPrice})`,
+        quantity: sql<number>`coalesce(sum(${itemsTable.quantity}), 0)::int`,
+        unit: sql<string | null>`min(${itemsTable.unit})`,
+        reorderThreshold: sql<number | null>`min(${itemsTable.reorderThreshold})`,
+        imageUrl: sql<string | null>`min(${itemsTable.imageUrl})`,
+        branchId: sql<number | null>`min(${itemsTable.branchId})`,
+        clientOpId: sql<string | null>`min(${itemsTable.clientOpId})`,
+        branchCount: sql<number>`count(*)::int`,
+        branchIds: sql<number[]>`array_agg(distinct coalesce(${itemsTable.branchId}, 0))`,
+        createdAt: sql<string>`min(${itemsTable.createdAt})`,
+        updatedAt: sql<string>`max(${itemsTable.updatedAt})`,
+      })
+      .from(itemsTable)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .groupBy(productKey)
+      .having(
+        search
+          ? sql`bool_or(
+              ${itemsTable.name} ilike ${'%' + search + '%'} OR
+              ${itemsTable.barcode} ilike ${'%' + search + '%'} OR
+              ${itemsTable.sku} ilike ${'%' + search + '%'}
+            )`
+          : sql`true`
+      )
+      .orderBy(sql`lower(btrim(${itemsTable.name}))`);
+
+    const items = await query;
 
     return NextResponse.json({ success: true, items });
   } catch (error) {
@@ -52,6 +95,13 @@ export async function POST(req: Request) {
   const { name, category, subCategory, barcode, sku, price, costPrice, quantity, unit, reorderThreshold, imageUrl, branchId, clientOpId } = body;
 
   try {
+    if (!validQuantity(quantity) || !validQuantity(reorderThreshold)) {
+      return NextResponse.json(
+        { success: false, message: 'Quantity and reorder threshold must be whole numbers of 0 or more' },
+        { status: 400 }
+      );
+    }
+
     // Offline replay idempotency: return the previously created row instead of
     // creating a duplicate when the same client operation is retried.
     if (clientOpId) {
@@ -97,6 +147,13 @@ export async function PUT(req: Request) {
   const { id, name, category, subCategory, barcode, sku, price, costPrice, quantity, unit, reorderThreshold, imageUrl, branchId } = body;
 
   try {
+    if (!validQuantity(quantity) || !validQuantity(reorderThreshold)) {
+      return NextResponse.json(
+        { success: false, message: 'Quantity and reorder threshold must be whole numbers of 0 or more' },
+        { status: 400 }
+      );
+    }
+
     const updatedItem = await db
       .update(itemsTable)
       .set({

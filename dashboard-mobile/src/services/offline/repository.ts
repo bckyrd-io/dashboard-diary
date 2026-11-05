@@ -91,15 +91,76 @@ export async function getItems(filters: {
     params.push(`%${String(filters.search).toLowerCase()}%`);
   }
 
-  const sql = `SELECT * FROM items${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY name COLLATE NOCASE`;
-  const items = await db.getAllAsync<Row>(sql, params);
+  // Same product-grouping as GET /api/items: one row per product with the
+  // stock summed across branch copies (transfers clone rows locally too).
+  // Search moves to HAVING so a barcode hit still totals every branch row.
+  const having = filters.search
+    ? `HAVING MAX(CASE WHEN LOWER(name) LIKE ? OR LOWER(COALESCE(barcode,'')) LIKE ?
+         OR LOWER(COALESCE(sku,'')) LIKE ? THEN 1 ELSE 0 END) = 1`
+    : '';
+  if (filters.search) {
+    const needle = `%${String(filters.search).toLowerCase()}%`;
+    params.push(needle, needle, needle);
+  }
+
+  const sql = `
+    SELECT
+      MIN(id) AS id,
+      MIN(name) AS name,
+      MIN(category) AS category,
+      MIN(subCategory) AS subCategory,
+      MIN(barcode) AS barcode,
+      MIN(sku) AS sku,
+      MIN(price) AS price,
+      MIN(costPrice) AS costPrice,
+      SUM(quantity) AS quantity,
+      MIN(unit) AS unit,
+      MIN(reorderThreshold) AS reorderThreshold,
+      MIN(imageUrl) AS imageUrl,
+      MIN(branchId) AS branchId,
+      COUNT(*) AS branchCount,
+      GROUP_CONCAT(DISTINCT branchId) AS branchIdsCsv
+    FROM items${where.length ? ` WHERE ${where.join(' AND ')}` : ''}
+    GROUP BY LOWER(TRIM(name)), category, subCategory
+    ${having}
+    ORDER BY name COLLATE NOCASE`;
+
+  const rows = await db.getAllAsync<Row>(sql, params);
+  const items = rows.map((row) => ({
+    ...row,
+    branchIds: String(row.branchIdsCsv ?? '')
+      .split(',')
+      .filter((v) => v !== '')
+      .map(Number),
+  }));
   return { success: true as const, items };
 }
 
 export async function getItem(id: number) {
   const db = await getOfflineDb();
-  const item = await db.getFirstAsync<Row>('SELECT * FROM items WHERE id = ?', [id]);
-  if (!item) return null;
+  const row = await db.getFirstAsync<Row>('SELECT * FROM items WHERE id = ?', [id]);
+  if (!row) return null;
+
+  // Total stock across every branch copy of this product (mirrors the server).
+  const totals = await db.getFirstAsync<Row>(
+    `SELECT SUM(quantity) AS quantity, COUNT(*) AS branchCount,
+            GROUP_CONCAT(DISTINCT branchId) AS branchIdsCsv
+     FROM items
+     WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))
+       AND COALESCE(category, '') = COALESCE(?, '')
+       AND COALESCE(subCategory, '') = COALESCE(?, '')`,
+    [row.name, row.category ?? null, row.subCategory ?? null]
+  );
+
+  const item = {
+    ...row,
+    quantity: Number(totals?.quantity ?? row.quantity ?? 0),
+    branchCount: Number(totals?.branchCount ?? 1),
+    branchIds: String(totals?.branchIdsCsv ?? '')
+      .split(',')
+      .filter((v) => v !== '')
+      .map(Number),
+  };
   return { success: true as const, item };
 }
 
@@ -107,7 +168,8 @@ export async function getBranches() {
   const db = await getOfflineDb();
   const branches = await db.getAllAsync<Row>(
     `SELECT b.id, b.name, b.location,
-       (SELECT COUNT(*) FROM items i WHERE i.branchId = b.id) AS itemCount
+       (SELECT COUNT(DISTINCT LOWER(TRIM(i.name)) || '|' || COALESCE(i.category,'') || '|' || COALESCE(i.subCategory,''))
+          FROM items i WHERE i.branchId = b.id) AS itemCount
      FROM branches b
      ORDER BY b.name COLLATE NOCASE`
   );
@@ -224,12 +286,6 @@ export async function getEventDetail(id: number) {
   );
 
   return { success: true as const, event: { ...event, items } };
-}
-
-export async function getActivities() {
-  const db = await getOfflineDb();
-  const activities = await db.getAllAsync<Row>('SELECT * FROM events ORDER BY id DESC');
-  return { success: true as const, activities };
 }
 
 export async function getSchedules(calendar: boolean) {

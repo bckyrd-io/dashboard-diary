@@ -1,35 +1,37 @@
 import { db } from '../../../../drizzle/db';
-import { staffCheckinsTable } from '../../../../drizzle/db/schema';
+import { performanceTable } from '../../../../drizzle/db/schema';
 import { NextResponse } from 'next/server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
+// Check-ins are performance rows with type='checkin'; the response shape
+// matches the old staff_checkins table so mobile needs no changes.
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const staffId = searchParams.get('staffId');
 
-    const rows = staffId
-      ? await db
-          .select()
-          .from(staffCheckinsTable)
-          .where(eq(staffCheckinsTable.staffId, Number(staffId)))
-          .orderBy(desc(staffCheckinsTable.timestamp))
-      : await db
-          .select()
-          .from(staffCheckinsTable)
-          .orderBy(desc(staffCheckinsTable.timestamp));
+    const conditions = [eq(performanceTable.type, 'checkin')];
+    if (staffId) {
+      conditions.push(eq(performanceTable.userId, Number(staffId)));
+    }
+
+    const rows = await db
+      .select()
+      .from(performanceTable)
+      .where(and(...conditions))
+      .orderBy(desc(performanceTable.timestamp));
 
     const checkIns = rows.map((r) => ({
       id: r.id,
-      staffId: r.staffId,
+      staffId: r.userId,
       tagId: r.tagId,
       workstationId: r.workstationId ?? undefined,
-      timestamp: new Date(r.timestamp).toISOString(),
+      timestamp: new Date(r.timestamp ?? r.createdAt).toISOString(),
     }));
 
     return NextResponse.json({ success: true, checkIns });
   } catch (error) {
-    console.error('Error fetching check-ins:', error);
+    console.error('Error fetching staff check-ins:', error);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
