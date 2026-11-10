@@ -26,6 +26,7 @@ import StaffScreen from '../screens/StaffScreen';
 import StaffActivityScreen from '../screens/StaffActivityScreen';
 import LoginScreen from '../screens/LoginScreen';
 import LandingScreen from '../screens/LandingScreen';
+import ConfigScreen from '../screens/ConfigScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { useAuth } from '../context/AuthContext';
 import { Theme } from '../constants/Theme';
@@ -152,6 +153,7 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Landing" component={LandingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Config" component={ConfigScreen} />
       </Stack.Navigator>
     );
   }

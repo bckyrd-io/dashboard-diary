@@ -1,13 +1,15 @@
 // SQLite schema for the mobile offline mirror.
 // Mirrors the Postgres tables used by the API (users excludes password hashes)
 // plus the sync bookkeeping tables.
-export const SCHEMA_VERSION = 2;
+// v3: branches gained tagId (the NFC tag ID registered for the branch).
+export const SCHEMA_VERSION = 3;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS branches (
   id INTEGER PRIMARY KEY,
   name TEXT,
   location TEXT,
+  tagId TEXT,
   createdAt TEXT,
   updatedAt TEXT
 );
@@ -153,7 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_outbox_state ON outbox (state, id);
 `;
 
 export const TABLE_COLUMNS: Record<string, string[]> = {
-  branches: ['id', 'name', 'location', 'createdAt', 'updatedAt'],
+  branches: ['id', 'name', 'location', 'tagId', 'createdAt', 'updatedAt'],
   users: ['id', 'username', 'email', 'role', 'branchId', 'createdAt'],
   categories: ['id', 'name', 'createdAt'],
   items: [

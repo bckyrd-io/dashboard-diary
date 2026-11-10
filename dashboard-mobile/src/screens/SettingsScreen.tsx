@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Database, Download, Upload, Info, RefreshCw } from 'lucide-react-native';
 import { ScreenHeader, Card, Button } from '../components/ui';
-import { ServerConfig } from '../components/ServerConfig';
 import { Theme } from '../constants/Theme';
 import { useAuth } from '../context/AuthContext';
 import { useOffline } from '../context/OfflineContext';
@@ -126,9 +125,6 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <ScreenHeader title="Settings" />
-
-        {/* LAN build: server discovery / manual address */}
-        <ServerConfig />
 
         <Card style={styles.sectionCard}>
           <View style={styles.sectionHeader}>

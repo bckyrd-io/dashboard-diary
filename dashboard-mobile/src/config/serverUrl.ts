@@ -1,34 +1,32 @@
-// Runtime server-address configuration for the standalone LAN build.
+// Runtime server configuration for the app.
 //
-// The production APK gets its API URL baked in at build time
-// (EXPO_PUBLIC_API_URL), but the local-network build must work on any LAN
-// regardless of which PC runs the API and what IP it currently has. For that
-// build the address is discovered at runtime (subnet scan against
-// GET /api/health) or entered manually, and persisted in AsyncStorage so it
-// survives app restarts.
+// The Config screen (reached from the link at the bottom of the Landing page)
+// lets the user choose how the app talks to its backend:
+//
+//   mode 'online'  -> use EXPO_PUBLIC_API_URL baked into the build
+//                     (the Vercel URL on EAS builds, the .env value in dev).
+//   mode 'local'   -> use the PC address the user typed, persisted here in
+//                     AsyncStorage so it survives app restarts.
+//
+// There is deliberately NO automatic subnet scanning: the address is always
+// entered by hand and verified against GET /api/health before it's trusted.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import * as Network from 'expo-network';
 
-const STORAGE_KEY = '@dashboard/server_url';
-const DISCOVERY_PORT = 3000;
+export type ServerMode = 'online' | 'local';
 
-let cachedUrl: string | null = null;
-let cacheLoaded = false;
-
-export function isExpoGo(): boolean {
-  return Constants.appOwnership === 'expo';
+export interface ServerConfig {
+  mode: ServerMode;
+  /** Only meaningful for mode 'local'. */
+  localAddress: string | null;
 }
 
-export function isBakedUrlSet(): boolean {
-  return !!process.env.EXPO_PUBLIC_API_URL?.trim();
-}
+const STORAGE_KEY = '@dashboard/server_config';
+// Key used by an earlier build that stored a single plain URL string.
+const LEGACY_STORAGE_KEY = '@dashboard/server_url';
 
-// True only for the standalone LAN build (no baked URL, not Expo Go): that
-// build must be told where the API lives before anything can be fetched.
-export function requiresServerConfig(): boolean {
-  return !isBakedUrlSet() && !isExpoGo();
-}
+const DEFAULT_CONFIG: ServerConfig = { mode: 'online', localAddress: null };
+
+let cachedConfig: ServerConfig | null = null;
 
 export function normalizeUrl(input: string): string {
   let url = input.trim().replace(/\/+$/, '');
@@ -42,37 +40,81 @@ export function isValidServerUrl(input: string): boolean {
   return /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?(?:[/?#]|$)/i.test(url);
 }
 
-export async function getServerUrl(): Promise<string | null> {
-  if (cacheLoaded) return cachedUrl;
+// The address compiled into this build (EXPO_PUBLIC_API_URL): Vercel on EAS,
+// the local PC address from dashboard-mobile/.env during development.
+export function getDefaultUrl(): string | null {
+  const env = process.env.EXPO_PUBLIC_API_URL?.trim();
+  return env ? env.replace(/\/+$/, '') : null;
+}
+
+export async function getServerConfig(): Promise<ServerConfig> {
+  if (cachedConfig) return cachedConfig;
+
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    cachedUrl = raw && isValidServerUrl(raw) ? normalizeUrl(raw) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<ServerConfig> | null;
+      if (parsed && (parsed.mode === 'online' || parsed.mode === 'local')) {
+        cachedConfig = {
+          mode: parsed.mode,
+          localAddress:
+            typeof parsed.localAddress === 'string' && parsed.localAddress.trim()
+              ? parsed.localAddress
+              : null,
+        };
+        return cachedConfig;
+      }
+    }
+
+    // Migrate installs from the pre-mode build: a plain saved URL means the
+    // user had already pointed the app at their PC.
+    const legacy = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy && isValidServerUrl(legacy)) {
+      const migrated: ServerConfig = { mode: 'local', localAddress: normalizeUrl(legacy) };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
+      cachedConfig = migrated;
+      return cachedConfig;
+    }
   } catch {
-    cachedUrl = null;
+    // Unreadable storage: fall through to the default.
   }
-  cacheLoaded = true;
-  return cachedUrl;
+
+  cachedConfig = { ...DEFAULT_CONFIG };
+  return cachedConfig;
 }
 
-export async function setServerUrl(input: string): Promise<string> {
-  const url = normalizeUrl(input);
-  if (!isValidServerUrl(url)) {
-    throw new Error('Enter a valid address like http://192.168.1.10:3000');
-  }
-  await AsyncStorage.setItem(STORAGE_KEY, url);
-  cachedUrl = url;
-  cacheLoaded = true;
-  return url;
+export async function setServerConfig(config: ServerConfig): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  cachedConfig = config;
 }
 
-export async function clearServerUrl(): Promise<void> {
-  await AsyncStorage.removeItem(STORAGE_KEY);
-  cachedUrl = null;
-  cacheLoaded = true;
+// "Reset to default" on the Config screen: forget every override and go back
+// to the build default (online mode -> EXPO_PUBLIC_API_URL).
+export async function clearServerConfig(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Nothing we can do; the in-memory cache reset below still applies.
+  }
+  cachedConfig = { ...DEFAULT_CONFIG };
+}
+
+// The address the app will actually talk to right now, or null when there is
+// nothing to use (no override and no build default).
+export async function getEffectiveServerUrl(): Promise<string | null> {
+  const config = await getServerConfig();
+  if (config.mode === 'local') {
+    const addr = config.localAddress ? normalizeUrl(config.localAddress) : '';
+    if (addr && isValidServerUrl(addr)) return addr;
+  }
+  return getDefaultUrl();
 }
 
 // Probes <base>/api/health and requires the response to identify this API, so
-// a random service that happens to answer on :3000 is not mistaken for it.
+// a random service that happens to answer on the same port is not mistaken
+// for it.
 export async function testServerUrl(input: string, timeoutMs = 3500): Promise<boolean> {
   const url = normalizeUrl(input);
   if (!isValidServerUrl(url)) return false;
@@ -91,46 +133,4 @@ export async function testServerUrl(input: string, timeoutMs = 3500): Promise<bo
   } finally {
     clearTimeout(timer);
   }
-}
-
-// Scans the phone's own /24 subnet on port 3000 for a running API. Returns
-// the address of the first instance that answers as this API and persists it.
-export async function findServer(
-  onProgress?: (tested: number, total: number) => void
-): Promise<string | null> {
-  let ip: string | null = null;
-  try {
-    const address = await Network.getIpAddressAsync();
-    if (address && address !== '0.0.0.0') ip = address;
-  } catch {
-    ip = null;
-  }
-  if (!ip) return null;
-
-  const parts = ip.split('.');
-  if (parts.length !== 4) return null;
-  const subnet = `${parts[0]}.${parts[1]}.${parts[2]}`;
-  const ownHost = Number(parts[3]);
-
-  const candidates: string[] = [];
-  for (let host = 1; host <= 254; host++) {
-    if (host === ownHost) continue;
-    candidates.push(`http://${subnet}.${host}:${DISCOVERY_PORT}`);
-  }
-
-  const CONCURRENCY = 32;
-  const TIMEOUT_PER_PROBE = 1200;
-  let found: string | null = null;
-
-  for (let i = 0; i < candidates.length && !found; i += CONCURRENCY) {
-    const batch = candidates.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(
-      batch.map(async (candidate) => ((await testServerUrl(candidate, TIMEOUT_PER_PROBE)) ? candidate : null))
-    );
-    found = results.find((r): r is string => r !== null) ?? null;
-    onProgress?.(Math.min(i + CONCURRENCY, candidates.length), candidates.length);
-  }
-
-  if (found) await setServerUrl(found);
-  return found;
 }

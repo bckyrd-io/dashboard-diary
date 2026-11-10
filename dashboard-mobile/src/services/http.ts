@@ -3,7 +3,7 @@
 // `api.ts` (which queues mutations) and `sync.ts` (which replays them).
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getServerUrl } from '../config/serverUrl';
+import { getEffectiveServerUrl } from '../config/serverUrl';
 
 function resolveDevFallback(): string {
   const hostUri =
@@ -17,23 +17,24 @@ function resolveDevFallback(): string {
 }
 
 // Resolution order:
-//   1. EXPO_PUBLIC_API_URL baked into the build (production APK -> Vercel).
-//   2. Standalone build with no baked URL (the LAN build): the runtime
-//      address discovered/entered by the user, persisted in AsyncStorage.
-//      If none is configured yet, NetworkError tells the caller to run the
-//      server setup UI instead of silently hitting the wrong host.
-//   3. Expo Go dev: the Metro host the bundle was loaded from.
+//   1. Saved Config choice (AsyncStorage):
+//        mode 'local'  -> the PC address the user entered on the Config screen.
+//        mode 'online' -> EXPO_PUBLIC_API_URL (Vercel on the APK, .env in dev).
+//   2. EXPO_PUBLIC_API_URL from the build/env when nothing is saved yet.
+//   3. Expo Go dev with no env at all: the Metro host the bundle came from,
+//      then Android-emulator/localhost fallbacks.
+// A standalone build with neither a saved address nor a baked URL throws
+// NetworkError so callers surface "configure the server" instead of silently
+// hitting the wrong host.
 export async function resolveApiBaseUrl(): Promise<string> {
-  const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, '');
+  const effective = await getEffectiveServerUrl();
+  if (effective) return effective;
 
-  if (Constants.appOwnership !== 'expo') {
-    const stored = await getServerUrl();
-    if (stored) return stored;
-    throw new NetworkError('Server address not configured yet');
+  if (Constants.appOwnership === 'expo') {
+    return resolveDevFallback();
   }
 
-  return resolveDevFallback();
+  throw new NetworkError('Server address not configured yet');
 }
 
 export class ApiError extends Error {

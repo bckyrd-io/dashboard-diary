@@ -167,7 +167,7 @@ export async function getItem(id: number) {
 export async function getBranches() {
   const db = await getOfflineDb();
   const branches = await db.getAllAsync<Row>(
-    `SELECT b.id, b.name, b.location,
+    `SELECT b.id, b.name, b.location, b.tagId,
        (SELECT COUNT(DISTINCT LOWER(TRIM(i.name)) || '|' || COALESCE(i.category,'') || '|' || COALESCE(i.subCategory,''))
           FROM items i WHERE i.branchId = b.id) AS itemCount
      FROM branches b

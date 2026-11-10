@@ -12,6 +12,7 @@ export default function AddBranchScreen() {
   const isDesktopOrTablet = windowWidth >= 768;
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [tagId, setTagId] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
@@ -22,6 +23,9 @@ export default function AddBranchScreen() {
       const result = await api.post<{ success: boolean; message?: string }>('/api/branches', {
         name,
         location,
+        // Optional NFC tag ID of the workstation tag at this branch; empty
+        // means "no tag yet" and is stored as null on the server.
+        tagId: tagId.trim(),
       });
       if (!result.success) throw new Error(result.message ?? 'Could not create branch.');
       Alert.alert('Success', 'Branch created successfully.');
@@ -43,7 +47,21 @@ export default function AddBranchScreen() {
         <Text style={styles.label}>Branch name</Text>
         <Input value={name} onChangeText={setName} placeholder="e.g. North Farm" style={{ marginBottom: 16 }} />
         <Text style={styles.label}>Location</Text>
-        <Input value={location} onChangeText={setLocation} placeholder="e.g. Lilongwe" style={{ marginBottom: 20 }} />
+        <Input value={location} onChangeText={setLocation} placeholder="e.g. Lilongwe" style={{ marginBottom: 16 }} />
+        <Text style={styles.label}>NFC tag ID (optional)</Text>
+        <Input
+          value={tagId}
+          onChangeText={setTagId}
+          placeholder="e.g. STATION-001"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={{ marginBottom: 6 }}
+        />
+        <Text style={styles.help}>
+          The workstation tag staff tap for NFC check-in. Must be unique per
+          branch; leave blank to assign a tag later.
+        </Text>
+        <View style={{ height: 16 }} />
         <Button loading={loading} onPress={submit}>
           {loading ? 'Creating...' : 'Create branch'}
         </Button>
@@ -63,4 +81,5 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   label: { fontSize: 13, fontWeight: '600', color: Theme.gray700, marginBottom: 6 },
+  help: { fontSize: 12, color: Theme.mutedForeground, lineHeight: 17 },
 });

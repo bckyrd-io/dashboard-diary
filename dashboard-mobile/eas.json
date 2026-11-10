@@ -3,23 +3,8 @@
     "appVersionSource": "local"
   },
   "build": {
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://next-type-bckyrd-project.vercel.app"
-      }
-    },
-    "preview-lan": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
-    },
     "production": {
-      "distribution": "store",
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
       },

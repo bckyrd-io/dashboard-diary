@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Nfc,
 } from 'lucide-react-native';
 import { api } from '../services/api';
 import { Button, Card, EmptyState, ErrorState, ScreenHeader } from '../components/ui';
@@ -33,6 +34,7 @@ interface Branch {
   id: number;
   name: string;
   location: string;
+  tagId?: string | null;
   itemCount: number;
 }
 
@@ -258,6 +260,12 @@ export default function BranchesScreen() {
                       <MapPin size={13} color={Theme.mutedForeground} />
                       <Text style={styles.branchLocation}>{item.location}</Text>
                     </View>
+                    {item.tagId ? (
+                      <View style={styles.tagChip}>
+                        <Nfc size={11} color={Theme.primary} />
+                        <Text style={styles.tagChipText}>{item.tagId}</Text>
+                      </View>
+                    ) : null}
                   </View>
 
                   {isTransferActive && !isSource ? (
@@ -314,6 +322,25 @@ const styles = StyleSheet.create({
   branchName: { fontWeight: '700', color: Theme.gray900, fontSize: 15, marginBottom: 2 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   branchLocation: { color: Theme.mutedForeground, fontSize: 13 },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: Theme.successLight,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  tagChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Theme.primaryDark,
+    letterSpacing: 0.3,
+  },
   branchFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

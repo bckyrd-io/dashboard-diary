@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import type { ScrollViewInstance, ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { HelpCircle, ShoppingBag } from 'lucide-react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { HelpCircle, Settings2, ShoppingBag } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
 import { Button } from '../components/ui';
+import { getEffectiveServerUrl, testServerUrl } from '../config/serverUrl';
 
 const SCREENSHOTS: Record<string, ImageSourcePropType> = {
   users: require('../../assets/screenshots/users.png'),
@@ -34,8 +35,40 @@ export default function LandingScreen() {
   const scrollRef = useRef<ScrollViewInstance>(null);
   const helpRef = useRef<ViewInstance>(null);
 
+  // Current API target, shown so anyone can see (before logging in) whether
+  // this install talks to the hosted server or a local PC — and whether it
+  // actually answers. Re-tested every time the screen gains focus, so it
+  // refreshes after returning from the Config screen.
+  const [serverUrl, setServerUrl] = useState<string | null>(null);
+  const [serverOk, setServerOk] = useState<boolean | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        const url = await getEffectiveServerUrl();
+        if (cancelled) return;
+        setServerUrl(url);
+        if (!url) {
+          setServerOk(false);
+          return;
+        }
+        setServerOk(null);
+        const ok = await testServerUrl(url);
+        if (!cancelled) setServerOk(ok);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [])
+  );
+
   const handleGetStarted = () => {
     navigation.navigate('Login' as never);
+  };
+
+  const handleOpenConfig = () => {
+    navigation.navigate('Config' as never);
   };
 
   const scrollToHelp = () => {
@@ -128,6 +161,34 @@ export default function LandingScreen() {
               {renderFeatureCard('Notification Center', 'Receive updates on low stock alerts, payment confirmments, and schedule changes.', SCREENSHOTS.notifications, '🔔')}
             </View>
           </View>
+
+          {/* Server status + link to the (revisitable) Config screen */}
+          <View style={styles.serverFooter}>
+            <View style={styles.serverStatusRow}>
+              <View
+                style={[
+                  styles.serverDot,
+                  {
+                    backgroundColor:
+                      serverOk === true
+                        ? Theme.success
+                        : serverOk === false
+                          ? Theme.error
+                          : Theme.gray400,
+                  },
+                ]}
+              />
+              <Text style={styles.serverLabel} numberOfLines={1}>
+                Server: {serverUrl ?? 'not configured'}
+                {serverOk === false && serverUrl ? ' (not connected)' : ''}
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.configLink} onPress={handleOpenConfig}>
+              <Settings2 size={16} color={Theme.primary} />
+              <Text style={styles.configLinkText}>Server Config</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -176,4 +237,36 @@ const styles = StyleSheet.create({
   featureIcon: { fontSize: 40 },
   featureTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8, color: Theme.primary },
   featureDescription: { fontSize: 14, color: '#4b5563', lineHeight: 20 },
+  serverFooter: {
+    borderTopWidth: 1,
+    borderTopColor: Theme.border,
+    paddingTop: 20,
+    alignItems: 'center',
+    gap: 12,
+  },
+  serverStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: '100%',
+  },
+  serverDot: { width: 9, height: 9, borderRadius: 5 },
+  serverLabel: {
+    fontSize: 13,
+    color: Theme.mutedForeground,
+    flexShrink: 1,
+  },
+  configLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Theme.border,
+    backgroundColor: Theme.background,
+    minHeight: 44,
+  },
+  configLinkText: { fontSize: 14, fontWeight: '600', color: Theme.primary },
 });

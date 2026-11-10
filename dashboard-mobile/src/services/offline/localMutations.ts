@@ -234,10 +234,25 @@ export async function createCategoryLocal(payload: Row) {
 }
 
 export async function createBranchLocal(payload: Row) {
+  const tagId = String(payload.tagId ?? '').trim() || null;
+
+  if (tagId) {
+    // Mirror the server's uniqueness rule for NFC tag IDs.
+    const db0 = await getOfflineDb();
+    const clash = await db0.getFirstAsync<Row>(
+      'SELECT * FROM branches WHERE tagId = ? LIMIT 1',
+      [tagId]
+    );
+    if (clash) {
+      throw new Error('NFC tag ID is already assigned to another branch');
+    }
+  }
+
   const branch: Row = {
     id: await nextTempId('branches'),
     name: String(payload.name ?? ''),
     location: String(payload.location ?? ''),
+    tagId,
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };

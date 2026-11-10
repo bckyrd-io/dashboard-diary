@@ -29,6 +29,17 @@ export async function initOfflineDb(): Promise<OfflineDb> {
       const native = await openDatabaseAsync('sneaker_lounge.db');
       await native.execAsync('PRAGMA journal_mode = WAL;');
       await native.execAsync(SCHEMA_SQL);
+
+      // v3 migration: branches gained the NFC tag ID column. SCHEMA_SQL's
+      // CREATE TABLE IF NOT EXISTS won't alter an existing v2 table, so add
+      // the column when it's missing (idempotent: checked every open).
+      const branchColumns = await native.getAllAsync<{ name: string }>(
+        'PRAGMA table_info(branches)'
+      );
+      if (!branchColumns.some((column) => column.name === 'tagId')) {
+        await native.execAsync('ALTER TABLE branches ADD COLUMN tagId TEXT');
+      }
+
       await native.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
       return wrap(native);
     })();
